@@ -1,5 +1,5 @@
 {
-  "name": "wbeng-stats",
+  "name": "@ttbooking/wbeng-stats",
   "version": "1.0.0",
   "description": "Wbeng statistics client based on redis",
   "main": "index.js",
