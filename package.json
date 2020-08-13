@@ -1,0 +1,25 @@
+{
+  "name": "wbeng-stats",
+  "version": "1.0.0",
+  "description": "Wbeng statistics client based on redis",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chrisstina/wbeng-stats.git"
+  },
+  "author": "chriss",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chrisstina/wbeng-stats/issues"
+  },
+  "homepage": "https://github.com/chrisstina/wbeng-stats#readme",
+  "dependencies": {
+    "config": "^3.3.1",
+    "moment": "^2.27.0",
+    "redis": "^3.0.2",
+    "winston": "^3.3.3"
+  }
+}
