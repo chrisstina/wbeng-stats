@@ -59,7 +59,7 @@ const updateCounter = name => {
 
     const pipe = redisClient.multi(); // открываем транзакцию
 
-    for (const precision of config.get('timelinePrecisions')) {
+    for (const precision of config.get('stats.timelinePrecisions')) {
         const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
         const timeSlice = parseInt(moment().unix() / precisionInSeconds) * precisionInSeconds; // получаем начало текущего временного отрезка
         const hash = `${precisionInSeconds}:${name}`; // 3600:flights:apirequests:all  3600:flights:apirequests:ttbooking
