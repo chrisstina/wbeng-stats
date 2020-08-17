@@ -7,7 +7,11 @@ const assert = require('assert'),
     {promisify} = require('util'),
     redis = require('redis');
 
-const config = require('config');
+process.env.SUPPRESS_NO_CONFIG_WARNING = 'y';
+const config = require('config').get('stats');
+const defaultConfig = require('./config/default');
+config.util.setModuleDefaults('stats', defaultConfig);
+
 const logger = require('./logger');
 
 const redisClient = (() => {
@@ -99,13 +103,22 @@ const getCounterData = async (precision, name, limit = null, offset = 0) => {
  * @param {string|null} profile профиль запроса
  * @return {string} например, flights:apirequests:ttservice или all:apirequests:default
  */
-const generateCounterName = (entryPoint = null, profile = null) =>  `${entryPoint || 'all'}:apirequests:${profile || 'all'}`;
+const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint || 'all'}:apirequests:${profile || 'all'}`;
 
 /**
  *
- * @type {{updateAPICalls: function(*, *)}}
+ * @type {{updateAPICalls: function(*), getAPICalls: function((string|null)=, (string|null)=, (string|null)=, *=, *=), cleanup: function()}}
  */
 module.exports = {
+    /**
+     * При необходимости, можно переписать дефольный конфиг stats
+     * @param config
+     */
+    setDefaults: (config) => {
+        // Mixin configs that have been passed in, and make those my defaults
+        config.util.extendDeep(defaultConfig, config);
+        config.util.setModuleDefaults('stats', defaultConfig);
+    },
     /**
      * Обновит все счетчики обращений к апи
      * @param expressRequest
@@ -116,7 +129,7 @@ module.exports = {
         assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
         assert(expressRequest.profile !== undefined, 'Need profile');
 
-        const { entryPoint, profile } = expressRequest;
+        const {entryPoint, profile} = expressRequest;
 
         updateCounter(generateCounterName()); // все запросы всех пользователей
         updateCounter(generateCounterName(entryPoint)); // конкретный тип запроса всех пользователей
@@ -144,5 +157,8 @@ module.exports = {
         }
 
         return await getCounterData(precision, generateCounterName(entryPoint, profile), limit, offset);
+    },
+    cleanup: () => {
+
     }
 };
