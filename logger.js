@@ -15,5 +15,9 @@ module.exports = createLogger({
         timestamp(),
         myFormat
     ),
-    transports: [ new transports.Console({ level: 'silly' }) ]
+    transports: [
+        new transports.File({ filename: 'stats-error.log', level: 'error' }),
+        new transports.File({ filename: 'stats.log' }),
+        new transports.Console({ level: 'silly' })
+    ]
 });

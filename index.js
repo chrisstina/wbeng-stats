@@ -87,23 +87,19 @@ const updateCounter = name => {
  *
  * @param {string} precision название временного отрезка (1 minutes, 3 months, etc)
  * @param {string} name имя счетчика (all:apirequests:all, flights:apirequests:ttservice, etc)
- * @return {*}
+ * @param limit
+ * @param offset
+ * @return {Promise<{}|null>}
  */
 const getCounterData = async (precision, name, limit = null, offset = 0) => {
     const precisionInSeconds = precisionsInSeconds.get(precision);
     const hash = `${precisionInSeconds}:${name}`;
     const retrieveDataAsync = promisify(redisClient.hgetall).bind(redisClient);
-    return await retrieveDataAsync(`count:${hash}`);
-
-    /*
-    const data = redisClient.hgetall(`count:${hash}`, (err, data) => {
-        if (err) {
-            logger.error("[STATS][VIEW] HGETALL got error " + err.toString());
-        }
-
-        console.dir(data);
-    });
-    return data;*/
+    try {
+        return await retrieveDataAsync(`count:${hash}`);
+    } catch (e) {
+        logger.error("[STATS][VIEW] HGETALL got error " + err.toString());
+    }
 };
 
 /**
@@ -153,9 +149,10 @@ module.exports = {
      * @param {string|null} profile
      * @param limit
      * @param offset
-     * @return {Promise<*>}
+     * @return {Promise<{}|null>}
      */
     getAPICalls: async (precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         precision = precision || defaultPrecision;
 
         if (config.get('stats.timelinePrecisions').indexOf(precision) === -1) {
