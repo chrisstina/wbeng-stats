@@ -116,9 +116,16 @@ const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint
 
 /**
  *
- * @type {{updateAPICalls: function(*), getAPICalls: function((string|null)=, (string|null)=, (string|null)=, *=, *=), cleanup: function()}}
+ * @type {{getAllowedTimelinePrecisions: function(), updateAPICalls: function(*), getAPICalls: function((string|null)=, (string|null)=, (string|null)=, *=, *=), cleanup: function()}}
  */
 module.exports = {
+    /**
+     *
+     * @return {value}
+     */
+    getAllowedTimelinePrecisions: () => {
+        return config.get('stats.timelinePrecisions');
+    },
     /**
      * Обновит все счетчики обращений к апи
      * @param expressRequest
