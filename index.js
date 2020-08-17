@@ -7,16 +7,14 @@ const assert = require('assert'),
     {promisify} = require('util'),
     redis = require('redis');
 
-process.env.SUPPRESS_NO_CONFIG_WARNING = 'y';
-const config = require('config').get('stats');
-const defaultConfig = require('./config/default');
-config.util.setModuleDefaults('stats', defaultConfig);
+const config = require('config');
+config.util.setModuleDefaults('stats', require('./config/default'));
 
 const logger = require('./logger');
 
 const redisClient = (() => {
     try {
-        return redis.createClient(config.get('redisPort') || 6379);
+        return redis.createClient(config.get('stats.redisPort') || 6379);
     } catch (e) {
         logger.error(e.stack);
     }
@@ -34,9 +32,9 @@ const getPrecisionInSeconds = precision => {
     return moment.duration(parseInt(duration), unit).asSeconds();
 };
 
-const defaultPrecision = config.get('timelinePrecisions')[0];
+const defaultPrecision = config.get('stats.timelinePrecisions')[0];
 const precisionsInSeconds = new Map();
-config.get('timelinePrecisions').forEach(precision => {
+config.get('stats.timelinePrecisions').forEach(precision => {
     precisionsInSeconds.set(precision, getPrecisionInSeconds(precision));
 });
 
@@ -111,15 +109,6 @@ const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint
  */
 module.exports = {
     /**
-     * При необходимости, можно переписать дефольный конфиг stats
-     * @param config
-     */
-    setDefaults: (config) => {
-        // Mixin configs that have been passed in, and make those my defaults
-        config.util.extendDeep(defaultConfig, config);
-        config.util.setModuleDefaults('stats', defaultConfig);
-    },
-    /**
      * Обновит все счетчики обращений к апи
      * @param expressRequest
      */
@@ -151,7 +140,7 @@ module.exports = {
     getAPICalls: async (precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
         precision = precision || defaultPrecision;
 
-        if (config.get('timelinePrecisions').indexOf(precision) === -1) {
+        if (config.get('stats.timelinePrecisions').indexOf(precision) === -1) {
             precision = defaultPrecision;
             logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
         }
