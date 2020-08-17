@@ -8,7 +8,18 @@ const assert = require('assert'),
     redis = require('redis');
 
 const config = require('config');
-config.util.setModuleDefaults('stats', require('./config/default'));
+config.util.setModuleDefaults('stats', {
+    "timelinePrecisions": [
+        "1 minutes",
+        "1 hours",
+        "1 days",
+        "1 weeks",
+        "1 months",
+        "3 months",
+        "6 months"
+    ],
+    "redisPort": 6379
+});
 
 const logger = require('./logger');
 
