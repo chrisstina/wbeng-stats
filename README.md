@@ -12,7 +12,7 @@ overwrite default config values, you may follow the structure below:
 ```json
 {
     "stats": {
-        "timelinePrecisions": [
+        "realtimePrecisions": [
             "1 minutes",
             "1 hours",
             "1 days",
@@ -26,7 +26,7 @@ overwrite default config values, you may follow the structure below:
 }
 ```
 
-where `timelinePrecisions` is the list of precisions to save counters for.
+where `realtimePrecisions` is the list of precisions to save counters for.
 
 ## Usage
 
@@ -61,13 +61,13 @@ Use async method `getAPIsalls` to get stats data over timeline precision. Allowe
             "6 months"
 ```
 
-or whatever is listed in the `timelinePrecisions` config field. Please note, these titles must comply with `moment.duration` format.
+or whatever is listed in the `realtimePrecisions` config field. Please note, these titles must comply with `moment.duration` format.
 
 
 ```js
 const wbengstats = require('./index');
 
-wbengstats.getAPICalls("1 weeks").then(res => {
+wbengstats.getAPICallsRealtime("1 weeks").then(res => {
     console.dir(res);
 });
 
