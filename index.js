@@ -20,6 +20,12 @@ config.util.setModuleDefaults('stats', {
         "month",
         "year",
     ],
+    "precisionFormats": [
+        "D:MMM:Y", // 1:Jan:2020
+        "w:Y", // 45:2020
+        "MMM:Y", // Jan:2020
+        "Y" // 2020
+    ],
     "allowedOperations": [
         "flights",
         "price",
@@ -64,9 +70,22 @@ const getPrecisionInSeconds = precision => {
 const getTimeSliceStart = precisionInSeconds => parseInt(moment().unix() / precisionInSeconds) * precisionInSeconds;
 
 const defaultPrecision = config.get('stats.realtimePrecisions')[0];
+/**
+ * Ассоциация названия отрезка и его длительности в секундах
+ * @type {Map<String, Number>}
+ */
 const precisionsInSeconds = new Map();
 config.get('stats.realtimePrecisions').forEach(precision => {
     precisionsInSeconds.set(precision, getPrecisionInSeconds(precision));
+});
+
+/**
+ * Ассоциация названия временного отрезка и его формата для moment
+ * @type {Map<String, String>}
+ */
+const precisionFormats = new Map();
+config.get('stats.statsPrecisions').forEach((precision, idx) => {
+    precisionFormats.set(precision, config.get('stats.precisionFormats')[idx])
 });
 
 /**
@@ -113,10 +132,21 @@ const updateOperationTotals = (entryPoint, name) => {
     const pipe = redisClient.multi(); // открываем транзакцию
 
     for (const precision of config.get('stats.statsPrecisions')) {
-        const timeSlice = moment().startOf(precision).unix();
-        const hash = `${timeSlice}:${name}`; // 1596240000:apirequests:all  1596240000:apirequests:ttbooking
 
-        pipe.zadd(`knownstats:`, 0, hash, (err, replies) => {
+/*
+        1:Dec:2020
+
+        w42:2020
+
+        2020
+
+        Dec:2020
+
+        */
+        const formattedDate = moment().format(precisionFormats.get(precision));
+        const hash = `${formattedDate}:${name}`; // 1:Dec:2020:apirequests:all  Jan:2020:apirequests:ttbooking
+
+        pipe.zadd(`knownstats:`, moment().format('X'), hash, (err, replies) => {
             if (err) {
                 logger.error("[STATS][UPD] ZADD got error " + err.toString());
             }
@@ -227,13 +257,14 @@ module.exports = {
 
     /**
      *
-     * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
-     * @param {string|null} entryPoint
+     * @param {string|null} precision - precision title from config, allowed are "day", "week", "month", ""year
      * @param {string|null} profile
      * @return {Promise<{}|null>}
      */
-    getAPILastCallsStats: async(precision = null, entryPoint = null, profile = null) => {
-        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for the last ${precision || defaultPrecision}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
+    getAPILastCallsStats: async(precision = null, profile = null) => {
+        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for the last ${precision || defaultPrecision}, all operations, ${profile || 'all profiles'}`);
+        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
         precision = precision || defaultPrecision;
 
         const statsByOperation = new Map();
