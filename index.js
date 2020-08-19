@@ -233,15 +233,22 @@ const getDefaultValueForPrecision = precision => {
 
 /**
  *
- * @type {{getAllowedTimelinePrecisions: function(), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{getAllowedRealtimePrecisions: function(), getAllowedStatsPrecisions: function(), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     /**
      *
-     * @return {value}
+     * @return {[]}
      */
-    getAllowedTimelinePrecisions: () => {
+    getAllowedRealtimePrecisions: () => {
         return config.get('stats.realtimePrecisions');
+    },
+    /**
+     *
+     * @return {[]}
+     */
+    getAllowedStatsPrecisions: () => {
+        return config.get('stats.statsPrecisions');
     },
     /**
      * Обновит все счетчики обращений к апи
