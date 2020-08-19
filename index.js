@@ -8,39 +8,10 @@ const assert = require('assert'),
     redis = require('redis');
 
 const config = require('config');
-config.util.setModuleDefaults('stats', {
-    "realtimePrecisions": [ // возможная величина временных отрезков для счетчиков текущих запросов
-        "1 minutes",
-        "1 hours",
-        "1 days"
-    ],
-    "statsPrecisions": [ // возможная величина временных отрезков для сбора итоговой статистики по запросам
-        "day",
-        "week",
-        "month",
-        "year",
-    ],
-    "precisionFormats": [
-        "D:MMM:Y", // 1:Jan:2020
-        "w:Y", // 45:2020
-        "MMM:Y", // Jan:2020
-        "Y" // 2020
-    ],
-    "allowedOperations": [
-        "flights",
-        "price",
-        "book",
-        "display",
-        "ancillaries",
-        "ancillary",
-        "ticket",
-        "cancel",
-        "void"
-    ],
-    "redisPort": 6379
-});
+config.util.setModuleDefaults('stats', require('./config.js'));
 
 const logger = require('./logger');
+const validator = require('./validator');
 
 const redisClient = (() => {
     try {
@@ -69,7 +40,9 @@ const getPrecisionInSeconds = precision => {
  */
 const getTimeSliceStart = precisionInSeconds => parseInt(moment().unix() / precisionInSeconds) * precisionInSeconds;
 
-const defaultPrecision = config.get('stats.realtimePrecisions')[0];
+const defaultRealtimePrecision = config.get('stats.realtimePrecisions')[0];
+const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
+
 /**
  * Ассоциация названия отрезка и его длительности в секундах
  * @type {Map<String, Number>}
@@ -122,7 +95,11 @@ const updateRealtimeCounter = name => {
 };
 
 /**
- * Обновляет статистику запросов по временным отрезкам
+ * Обновляет статистику запросов по временным отрезкам. Примеры ключей:
+ * apirequests:default:1:Dec:2020
+ * apirequests:all:w42:2020
+ * apirequests:ttservice:2020
+ * apirequests:all:Dec:2020
  *
  * @param entryPoint название операции
  * @param name например apirequests:all или apirequests:default
@@ -132,21 +109,10 @@ const updateOperationTotals = (entryPoint, name) => {
     const pipe = redisClient.multi(); // открываем транзакцию
 
     for (const precision of config.get('stats.statsPrecisions')) {
-
-/*
-        1:Dec:2020
-
-        w42:2020
-
-        2020
-
-        Dec:2020
-
-        */
         const formattedDate = moment().format(precisionFormats.get(precision));
-        const hash = `${formattedDate}:${name}`; // 1:Dec:2020:apirequests:all  Jan:2020:apirequests:ttbooking
+        const hash = `${name}:${formattedDate}`; // apirequests:all:1:Dec:2020:  apirequests:ttbooking:Jan:2020
 
-        pipe.zadd(`knownstats:`, moment().format('X'), hash, (err, replies) => {
+        pipe.zadd(`knownstats:`, 0, hash, (err, replies) => {
             if (err) {
                 logger.error("[STATS][UPD] ZADD got error " + err.toString());
             }
@@ -173,12 +139,21 @@ const updateOperationTotals = (entryPoint, name) => {
  * @param offset
  * @return {Promise<{}|null>}
  */
-const getCounterData = async (precision, name, limit = null, offset = 0) => {
+const getRealtimeCounterData = async (precision, name, limit = null, offset = 0) => {
     const precisionInSeconds = precisionsInSeconds.get(precision);
     const hash = `${precisionInSeconds}:${name}`;
     const retrieveDataAsync = promisify(redisClient.hgetall).bind(redisClient);
     try {
         return await retrieveDataAsync(`count:${hash}`);
+    } catch (e) {
+        logger.error("[STATS][VIEW] HGETALL got error " + err.toString());
+    }
+};
+
+const getStatsData = async (name) => {
+    const retrieveDataAsync = promisify(redisClient.hgetall).bind(redisClient);
+    try {
+        return await retrieveDataAsync(`stats:${name}`);
     } catch (e) {
         logger.error("[STATS][VIEW] HGETALL got error " + err.toString());
     }
@@ -193,15 +168,72 @@ const getCounterData = async (precision, name, limit = null, offset = 0) => {
 const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint || 'all'}:apirequests:${profile || 'all'}`;
 
 /**
- * Имя для статистики запросов
+ * Имя ключа для статистики запросов
  * @param profile
  * @return {string}  например, apirequests:ttservice или apirequests:default
  */
 const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
 
 /**
+ * Полное имя ключа с датой для получения статистики запросов
  *
- * @type {{getAllowedTimelinePrecisions: function(), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), cleanup: function()}}
+ *
+ * "week" - number 0 - 52 optionally year
+ * "year" -  number 2020+
+ * "month" - number 1 - 12 | string months
+ * "day" - 2020.08.19
+ *
+ * @param {string | null} profile
+ * @param {string} precision
+ * @param {string | Date | Number} value
+ * @return {string} 'stats:2020:apirequests:default' или 'stats:19:Aug:2020:all' или 'stats:34:2020:ttservice'
+ */
+const generateStatsNameWithDate = (profile, precision, value) => {
+    assert(config.get('stats.statsPrecisions').indexOf(precision) !== -1, `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+    return `${generateStatsName(profile)}:${valueToDate(precision, value)}`;;
+};
+
+/**
+ * year: as is
+ * month: as
+ * week: 2020W11
+ * day: as is
+ *
+ * @param precision
+ * @param value
+ * @return {string}
+ * @throws validation error
+ */
+const valueToDate = (precision, value) => {
+    switch (precision) {
+        case "week":
+            value = validator.normalizeWeek(value);
+            break;
+        case "month":
+            value = validator.normalizeMonth(value);
+            break;
+        case "year":
+            value = validator.normalizeYear(value);
+            break;
+    }
+
+    const date = moment(value);
+    assert(date.isValid(), `Некорректное значение value для ${precision}. Ожидается валидная дата`);
+    return date.format(precisionFormats.get(precision));
+};
+
+/**
+ *
+ * @param {string} precision - day, week, month, year
+ * @return {string} текущее значение в нужном формате: например: 1.Aug.2020, 34.2020, Aug.2020, 2020
+ */
+const getDefaultValueForPrecision = precision => {
+    return moment().format(precisionFormats.get(precision).replace(/:/g, ''));
+};
+
+/**
+ *
+ * @type {{getAllowedTimelinePrecisions: function(), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     /**
@@ -244,38 +276,43 @@ module.exports = {
      */
     getAPICallsRealtime: async (precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
         logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
-        precision = precision || defaultPrecision;
+        precision = precision || defaultRealtimePrecision;
 
         if (config.get('stats.realtimePrecisions').indexOf(precision) === -1) {
-            precision = defaultPrecision;
+            precision = defaultRealtimePrecision;
             logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
         }
 
-        return await getCounterData(precision, generateCounterName(entryPoint, profile), limit, offset);
+        return await getRealtimeCounterData(precision, generateCounterName(entryPoint, profile), limit, offset);
     },
-
 
     /**
+     * Вернет статистику по всем запросам за указанный промежуток времени.
      *
-     * @param {string|null} precision - precision title from config, allowed are "day", "week", "month", ""year
-     * @param {string|null} profile
-     * @return {Promise<{}|null>}
+     * Нпаример,
+     * getAPICallsStats("default", "week", 34) // данные для профиля default за последнюю неделю
+     * getAPICallsStats("default", "day", 19.08.2020) // данные для профиля default за 19 августа 2020
+     * getAPICallsStats(null, "month") // все данные за последний месяц
+     * getAPICallsStats(null, "month", "Jun.2017") // все данные за июнь 2017 года
+     *
+     * @param profile
+     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
+     * @param {String|null}value конкретный отрезок времени.
+     *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
+     *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
+     * @return {Promise<void>}
      */
-    getAPILastCallsStats: async(precision = null, profile = null) => {
-        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for the last ${precision || defaultPrecision}, all operations, ${profile || 'all profiles'}`);
+    getAPICallsStats: async(profile = null, precision = null, value = null) => {
+        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${`${profile} profile` || 'all profiles'}`);
+
         assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
-        precision = precision || defaultPrecision;
+        precision = precision || defaultStatsPrecision;
+        value = value || getDefaultValueForPrecision(precision);
 
-        const statsByOperation = new Map();
-        config.get('stats.allowedOperations').forEach(operation => {
-            statsByOperation.set(operation, 1);
-        });
+        return await getStatsData(generateStatsNameWithDate(profile, precision, value));
     },
-    getAPIPeriodCallsStats: async(dateFrom, dateTo, entryPoint = null, profile = null) => {
-        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for the period ${dateFrom} - ${dateTo}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
 
-    },
     cleanup: () => {
 
     }
