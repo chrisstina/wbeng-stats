@@ -68,18 +68,8 @@ class RedisStorage extends Storage {
         });
     };
 
-    /**
-     *
-     * @param {string} precision название временного отрезка (1 minutes, 3 months, etc)
-     * @param {string} name имя счетчика (all:apirequests:all, flights:apirequests:ttservice, etc)
-     * @param limit
-     * @param offset
-     * @return {Promise<{}|null>}
-     */
-    async getRealtimeCounterData(precision, name, limit = null, offset = 0) {
-        const precisionInSeconds = precisionsInSeconds.get(precision);
-        const hash = `${precisionInSeconds}:${name}`;
-        const retrieveDataAsync = promisify(redisClient.hgetall).bind(redisClient);
+    async getRealtimeCounterData(hash, limit = null, offset = 0) {
+        const retrieveDataAsync = promisify(this.redisClient.hgetall).bind(this.redisClient);
         try {
             return await retrieveDataAsync(`count:${hash}`);
         } catch (e) {

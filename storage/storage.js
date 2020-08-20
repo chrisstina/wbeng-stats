@@ -17,7 +17,14 @@ class Storage {
     updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {
     }
 
-    async getRealtimeCounterData() {
+    /**
+     *
+     * @param {String} hash
+     * @param limit
+     * @param offset
+     * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
+     */
+    async getRealtimeCounterData(hash, limit = null, offset = 0) {
 
     }
 

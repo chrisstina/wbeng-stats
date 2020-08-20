@@ -68,7 +68,7 @@ config.get('stats.statsPrecisions').forEach((precision, idx) => {
  * @param entryPoint
  * @param profile
  */
-const updateRealtimeCounter = (entryPoint = null, profile = null) => {
+const incrementRealtimeCounter = (entryPoint = null, profile = null) => {
     const keyName = generateCounterName(entryPoint, profile);
     /**
      *
@@ -101,6 +101,20 @@ const incrementOperationTotals = (entryPoint, profile = null) => {
         return `${keyName}:${formattedDate}`;
     });
     storageService.updateOperationTotals(entryPoint, hashes);
+};
+
+/**
+ * Получение данных статистики реального времени
+ *
+ * @param {String} precision название временного отрезка (1 minutes, 3 months, etc)
+ * @param {String|null} entryPoint
+ * @param {String|null} profile
+ * @param {Number|null} limit
+ * @param {Number} offset
+ * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
+ */
+const getRealtimeCounterData = async (precision, entryPoint = null, profile = null, limit = null, offset = 0) => {
+    return storageService.getRealtimeCounterData(`${precisionsInSeconds.get(precision)}:${generateCounterName(entryPoint, profile)}`);
 };
 
 /**
@@ -206,12 +220,12 @@ module.exports = {
 
         const {entryPoint, profile} = expressRequest;
 
-        updateRealtimeCounter(); // все запросы всех пользователей
-        updateRealtimeCounter(entryPoint); // конкретный тип запроса всех пользователей
+        incrementRealtimeCounter(); // все запросы всех пользователей
+        incrementRealtimeCounter(entryPoint); // конкретный тип запроса всех пользователей
         incrementOperationTotals(entryPoint);
         if (profile) {
-            updateRealtimeCounter(null, profile);  // все запросы пользователя
-            updateRealtimeCounter(entryPoint, profile); // конкретный тип запроса пользователя
+            incrementRealtimeCounter(null, profile);  // все запросы пользователя
+            incrementRealtimeCounter(entryPoint, profile); // конкретный тип запроса пользователя
             incrementOperationTotals(entryPoint, profile);
         }
     },
@@ -234,7 +248,7 @@ module.exports = {
             logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
         }
 
-        return await getRealtimeCounterData(precision, generateCounterName(entryPoint, profile), limit, offset);
+        return await getRealtimeCounterData(precision, entryPoint, profile, limit, offset);
     },
 
     /**
