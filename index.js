@@ -3,25 +3,27 @@
  */
 
 const assert = require('assert'),
-    moment = require('moment'),
-    {promisify} = require('util'),
-    redis = require('redis');
-
-const config = require('config');
-config.util.setModuleDefaults('stats', require('./config.js'));
+    moment = require('moment');
 
 const logger = require('./logger');
 const validator = require('./validator');
 
-const redisClient = (() => {
-    try {
-        return redis.createClient(config.get('stats.redisPort') || 6379);
-    } catch (e) {
-        logger.error(e.stack);
-    }
-    return null;
-})();
+const config = require('config');
+config.util.setModuleDefaults('stats', require('./config.js'));
 
+/**
+ * @param storageName redis \ mysql
+ * @return Storage
+ */
+const createStorageService = (storageName) => {
+    const Storage = require(`./storage/${storageName}-storage`);
+    return new Storage(config);
+};
+/**
+ *
+ * @type {Storage}
+ */
+const storageService = createStorageService(config.get('stats.storage'));
 
 /**
  * Переводит название временного отрезка в секунды. Например, "1 minutes" => 60
@@ -62,101 +64,43 @@ config.get('stats.statsPrecisions').forEach((precision, idx) => {
 });
 
 /**
- * Обновляет счетчик запросов для таймлайна
- * @param name
+ *
+ * @param entryPoint
+ * @param profile
  */
-const updateRealtimeCounter = name => {
-    const updateBy = 1;
-
-    const pipe = redisClient.multi(); // открываем транзакцию
-
-    for (const precision of config.get('stats.realtimePrecisions')) {
+const updateRealtimeCounter = (entryPoint = null, profile = null) => {
+    const keyName = generateCounterName(entryPoint, profile);
+    /**
+     *
+     * @type {Map<Number, String>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
+     */
+    const timeSlicedHashes = new Map();
+    config.get('stats.realtimePrecisions').forEach(precision => {
         const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
-        const timeSlice = getTimeSliceStart(precisionInSeconds);
-        const hash = `${precisionInSeconds}:${name}`; // 3600:flights:apirequests:all  3600:flights:apirequests:ttbooking
-
-        pipe.zadd(`knowncounters:`, 0, hash, (err, replies) => {
-            if (err) {
-                logger.error("[STATS][UPD] ZADD got error " + err.toString());
-            }
-        });
-        pipe.hincrby(`count:${hash}`, timeSlice, updateBy, (err, replies) => {
-            if (err) {
-                logger.error("[STATS][UPD] HINCRBY got error " + err.toString());
-            }
-        });
-    }
-
-    pipe.exec((err, replies) => {
-        if (err) {
-            log.error("[STATS][UPD] MULTI got error " + err.toString());
-        }
+        timeSlicedHashes.set(getTimeSliceStart(precisionInSeconds), `${precisionInSeconds}:${keyName}`);
+        return `${precisionInSeconds}:${keyName}`;
     });
+
+    storageService.updateRealtimeCounter(timeSlicedHashes);
 };
 
 /**
  * Обновляет статистику запросов по временным отрезкам. Примеры ключей:
- * apirequests:default:1:Dec:2020
- * apirequests:all:w42:2020
+ * apirequests:default:2020:12:30
+ * apirequests:all:2020:w42
  * apirequests:ttservice:2020
- * apirequests:all:Dec:2020
+ * apirequests:all:2020:08
  *
  * @param entryPoint название операции
- * @param name например apirequests:all или apirequests:default
+ * @param {string|null} profile
  */
-const updateOperationTotals = (entryPoint, name) => {
-    const updateBy = 1;
-    const pipe = redisClient.multi(); // открываем транзакцию
-
-    for (const precision of config.get('stats.statsPrecisions')) {
+const incrementOperationTotals = (entryPoint, profile = null) => {
+    const keyName = generateStatsName(profile);
+    const hashes = config.get('stats.statsPrecisions').map(precision => {
         const formattedDate = moment().format(precisionFormats.get(precision));
-        const hash = `${name}:${formattedDate}`; // apirequests:all:1:Dec:2020:  apirequests:ttbooking:Jan:2020
-
-        pipe.zadd(`knownstats:`, 0, hash, (err, replies) => {
-            if (err) {
-                logger.error("[STATS][UPD] ZADD got error " + err.toString());
-            }
-        });
-
-        pipe.hincrby(`stats:${hash}`, entryPoint, updateBy, (err, replies) => {
-            if (err) {
-                logger.error("[STATS][UPD] HINCRBY got error " + err.toString());
-            }
-        });
-    }
-    pipe.exec((err, replies) => {
-        if (err) {
-            log.error("[STATS][UPD] MULTI got error " + err.toString());
-        }
+        return `${keyName}:${formattedDate}`;
     });
-};
-
-/**
- *
- * @param {string} precision название временного отрезка (1 minutes, 3 months, etc)
- * @param {string} name имя счетчика (all:apirequests:all, flights:apirequests:ttservice, etc)
- * @param limit
- * @param offset
- * @return {Promise<{}|null>}
- */
-const getRealtimeCounterData = async (precision, name, limit = null, offset = 0) => {
-    const precisionInSeconds = precisionsInSeconds.get(precision);
-    const hash = `${precisionInSeconds}:${name}`;
-    const retrieveDataAsync = promisify(redisClient.hgetall).bind(redisClient);
-    try {
-        return await retrieveDataAsync(`count:${hash}`);
-    } catch (e) {
-        logger.error("[STATS][VIEW] HGETALL got error " + err.toString());
-    }
-};
-
-const getStatsData = async (name) => {
-    const retrieveDataAsync = promisify(redisClient.hgetall).bind(redisClient);
-    try {
-        return await retrieveDataAsync(`stats:${name}`);
-    } catch (e) {
-        logger.error("[STATS][VIEW] HGETALL got error " + err.toString());
-    }
+    storageService.updateOperationTotals(entryPoint, hashes);
 };
 
 /**
@@ -168,9 +112,9 @@ const getStatsData = async (name) => {
 const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint || 'all'}:apirequests:${profile || 'all'}`;
 
 /**
- * Имя ключа для статистики запросов
+ * Имя ключа для статистики запросов, например apirequests:all или apirequests:default
  * @param profile
- * @return {string}  например, apirequests:ttservice или apirequests:default
+ * @return {string} например, apirequests:ttservice или apirequests:default
  */
 const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
 
@@ -190,7 +134,7 @@ const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
  */
 const generateStatsNameWithDate = (profile, precision, value) => {
     assert(config.get('stats.statsPrecisions').indexOf(precision) !== -1, `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
-    return `${generateStatsName(profile)}:${valueToDate(precision, value)}`;;
+    return `${generateStatsName(profile)}:${valueToDate(precision, value)}`;
 };
 
 /**
@@ -262,13 +206,13 @@ module.exports = {
 
         const {entryPoint, profile} = expressRequest;
 
-        updateRealtimeCounter(generateCounterName()); // все запросы всех пользователей
-        updateRealtimeCounter(generateCounterName(entryPoint)); // конкретный тип запроса всех пользователей
-        updateOperationTotals(entryPoint, generateStatsName());
+        updateRealtimeCounter(); // все запросы всех пользователей
+        updateRealtimeCounter(entryPoint); // конкретный тип запроса всех пользователей
+        incrementOperationTotals(entryPoint);
         if (profile) {
-            updateRealtimeCounter(generateCounterName(null, profile));  // все запросы пользователя
-            updateRealtimeCounter(generateCounterName(entryPoint, profile)); // конкретный тип запроса пользователя
-            updateOperationTotals(entryPoint, generateStatsName(profile));
+            updateRealtimeCounter(null, profile);  // все запросы пользователя
+            updateRealtimeCounter(entryPoint, profile); // конкретный тип запроса пользователя
+            incrementOperationTotals(entryPoint, profile);
         }
     },
 

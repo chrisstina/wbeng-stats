@@ -27,5 +27,9 @@ module.exports = {
         "cancel",
         "void"
     ],
-    "redisPort": 6379
+    "storage": "redis", // redis | mysql
+    "redis": {
+        "port": 6379
+    },
+    "mysql": {}
 };
