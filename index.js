@@ -89,7 +89,7 @@ const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
  *
  * @param {string | null} profile
  * @param {string} precision
- * @param {string | Date | Number} value
+ * @param {string | Number} value
  * @return {string} 'stats:2020:apirequests:default' или 'stats:19:Aug:2020:all' или 'stats:34:2020:ttservice'
  */
 const generateStatsNameWithDate = (profile, precision, value) => {
@@ -104,21 +104,15 @@ const generateStatsNameWithDate = (profile, precision, value) => {
  * Если задан отрезок (precision) - неделя, вернет номер недели с годом в формате moment (если не указано, то текущая неделя текущего года, если указана только неделя - неделя текущего года)
  * Если задан отрезок (precision) - год, вернет номер года (текущий, или переданный)
  *
- * year: as is
- * month: as
- * week: 2020W11
- * day: as is
- *
  * @param {string} precision year / month / week / day
  * @param {string} value дата в формате Moment (2020-08-19, 2020W34, 32, 1)
- * @return {string}
+ * @return {string} дата для формирования ключа, например, 2020:, 2020:08, 2020:W34
  * @throws validation error
  */
 const valueToDate = (precision, value) => {
     value = validate[precision](value);
     const date = moment(value);
     assert(date.isValid(), `Некорректное значение value для ${precision}. Ожидается валидная дата`);
-    console.log(date);
     return date.format(precisionFormats.get(precision));
 };
 
@@ -220,7 +214,7 @@ module.exports = {
      * @param expressRequest
      */
     updateAPICalls: (expressRequest) => {
-        logger.verbose("[STATS][UPD] Update API calls stats");
+        logger.verbose("[STATS][UPD] Update API calls stats " + process.env.NODE_ENV);
 
         assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
         assert(expressRequest.profile !== undefined, 'Need profile');
