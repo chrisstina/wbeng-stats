@@ -77,10 +77,10 @@ class RedisStorage extends Storage {
         }
     };
 
-    async getOperationTotalsData(name) {
-        const retrieveDataAsync = promisify(redisClient.hgetall).bind(redisClient);
+    async getOperationTotalsData(hash) {
+        const retrieveDataAsync = promisify(this.redisClient.hgetall).bind(this.redisClient);
         try {
-            return await retrieveDataAsync(`stats:${name}`);
+            return await retrieveDataAsync(`stats:${hash}`);
         } catch (e) {
             logger.error("[STATS][VIEW] HGETALL got error " + err.toString());
         }

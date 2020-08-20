@@ -118,6 +118,17 @@ const getRealtimeCounterData = async (precision, entryPoint = null, profile = nu
 };
 
 /**
+ *
+ * @param profile
+ * @param precision
+ * @param value
+ * @return {Promise<{string: string}>} {<operationName>: hits, <ioerationName2>: hits}
+ */
+const getStatsData = async (profile, precision, value) => {
+    return storageService.getOperationTotalsData(generateStatsNameWithDate(profile, precision, value));
+};
+
+/**
  * Имя для счетчика
  * @param {string|null} entryPoint название операции
  * @param {string|null} profile профиль запроса
@@ -269,13 +280,12 @@ module.exports = {
      */
     getAPICallsStats: async(profile = null, precision = null, value = null) => {
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${`${profile} profile` || 'all profiles'}`);
-
+        precision = precision || defaultStatsPrecision;
         assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
-        precision = precision || defaultStatsPrecision;
-        value = value || getDefaultValueForPrecision(precision);
 
-        return await getStatsData(generateStatsNameWithDate(profile, precision, value));
+        value = value || getDefaultValueForPrecision(precision);
+        return await getStatsData(profile, precision, value);
     },
 
     cleanup: () => {
