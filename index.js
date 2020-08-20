@@ -79,25 +79,6 @@ const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint
 const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
 
 /**
- * Полное имя ключа с датой для получения статистики запросов
- *
- *
- * "week" - number 0 - 52 optionally year
- * "year" -  number 2020+
- * "month" - number 1 - 12 | string months
- * "day" - 2020.08.19
- *
- * @param {string | null} profile
- * @param {string} precision
- * @param {string | Number} value
- * @return {string} 'stats:2020:apirequests:default' или 'stats:19:Aug:2020:all' или 'stats:34:2020:ttservice'
- */
-const generateStatsNameWithDate = (profile, precision, value) => {
-    assert(config.get('stats.statsPrecisions').indexOf(precision) !== -1, `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
-    return `${generateStatsName(profile)}:${valueToDate(precision, value)}`;
-};
-
-/**
  * Нормализует полученное значение value и приводит его к нужной дате.
  *
  * Если задан отрезок (precision) - год, вернет номер года (если не указан, то текущий)
@@ -110,7 +91,7 @@ const generateStatsNameWithDate = (profile, precision, value) => {
  * @throws validation error
  */
 const valueToDate = (precision, value) => {
-    value = validate[precision](value);
+    value = validate.normalizers[precision](value);
     const date = moment(value);
     assert(date.isValid(), `Некорректное значение value для ${precision}. Ожидается валидная дата`);
     return date.format(precisionFormats.get(precision));
@@ -187,12 +168,12 @@ const getRealtimeCounterData = async (precision, entryPoint = null, profile = nu
  * @return {Promise<{string: string}>} {<operationName>: hits, <ioerationName2>: hits}
  */
 const getStatsData = async (profile, precision, value) => {
-    return storageService.getOperationTotalsData(generateStatsNameWithDate(profile, precision, value));
+    return storageService.getOperationTotalsData(`${generateStatsName(profile)}:${valueToDate(precision, value)}`);
 };
 
 /**
  *
- * @type {{getAllowedRealtimePrecisions: function(), getAllowedStatsPrecisions: function(), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{getAllowedRealtimePrecisions: function(), getAllowedStatsPrecisions: function(), validateStatsDate: function(*, *=), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     /**
@@ -208,6 +189,14 @@ module.exports = {
      */
     getAllowedStatsPrecisions: () => {
         return config.get('stats.statsPrecisions');
+    },
+    /**
+     * Валидирует данные для получения статистики на конкретный отрезок времени
+     * @param precision
+     * @param value
+     */
+    validateStatsDate: (precision, value) => {
+        validate.checkers[precision](value);
     },
     /**
      * Обновит все счетчики обращений к апи
@@ -255,7 +244,7 @@ module.exports = {
     /**
      * Вернет статистику по всем запросам за указанный промежуток времени.
      *
-     * Нпаример,
+     * Например,
      * getAPICallsStats("default", "week", 34) // данные для профиля default за последнюю неделю
      * getAPICallsStats("default", "day", 19.08.2020) // данные для профиля default за 19 августа 2020
      * getAPICallsStats(null, "month") // все данные за последний месяц
@@ -266,7 +255,7 @@ module.exports = {
      * @param {String|null}value конкретный отрезок времени.
      *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
      *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
-     * @return {Promise<void>}
+     * @return {Promise<{string: string}>}
      */
     getAPICallsStats: async(profile = null, precision = null, value = null) => {
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${`${profile} profile` || 'all profiles'}`);
