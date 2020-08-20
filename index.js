@@ -6,7 +6,7 @@ const assert = require('assert'),
     moment = require('moment');
 
 const logger = require('./logger');
-const validator = require('./validator');
+const validate = require('./validator');
 
 const config = require('config');
 config.util.setModuleDefaults('stats', require('./config.js'));
@@ -62,6 +62,74 @@ const precisionFormats = new Map();
 config.get('stats.statsPrecisions').forEach((precision, idx) => {
     precisionFormats.set(precision, config.get('stats.precisionFormats')[idx])
 });
+
+/**
+ * Имя для счетчика
+ * @param {string|null} entryPoint название операции
+ * @param {string|null} profile профиль запроса
+ * @return {string} например, flights:apirequests:ttservice или all:apirequests:default
+ */
+const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint || 'all'}:apirequests:${profile || 'all'}`;
+
+/**
+ * Имя ключа для статистики запросов, например apirequests:all или apirequests:default
+ * @param profile
+ * @return {string} например, apirequests:ttservice или apirequests:default
+ */
+const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
+
+/**
+ * Полное имя ключа с датой для получения статистики запросов
+ *
+ *
+ * "week" - number 0 - 52 optionally year
+ * "year" -  number 2020+
+ * "month" - number 1 - 12 | string months
+ * "day" - 2020.08.19
+ *
+ * @param {string | null} profile
+ * @param {string} precision
+ * @param {string | Date | Number} value
+ * @return {string} 'stats:2020:apirequests:default' или 'stats:19:Aug:2020:all' или 'stats:34:2020:ttservice'
+ */
+const generateStatsNameWithDate = (profile, precision, value) => {
+    assert(config.get('stats.statsPrecisions').indexOf(precision) !== -1, `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+    return `${generateStatsName(profile)}:${valueToDate(precision, value)}`;
+};
+
+/**
+ * Нормализует полученное значение value и приводит его к нужной дате.
+ *
+ * Если задан отрезок (precision) - год, вернет номер года (если не указан, то текущий)
+ * Если задан отрезок (precision) - неделя, вернет номер недели с годом в формате moment (если не указано, то текущая неделя текущего года, если указана только неделя - неделя текущего года)
+ * Если задан отрезок (precision) - год, вернет номер года (текущий, или переданный)
+ *
+ * year: as is
+ * month: as
+ * week: 2020W11
+ * day: as is
+ *
+ * @param {string} precision year / month / week / day
+ * @param {string} value дата в формате Moment (2020-08-19, 2020W34, 32, 1)
+ * @return {string}
+ * @throws validation error
+ */
+const valueToDate = (precision, value) => {
+    value = validate[precision](value);
+    const date = moment(value);
+    assert(date.isValid(), `Некорректное значение value для ${precision}. Ожидается валидная дата`);
+    console.log(date);
+    return date.format(precisionFormats.get(precision));
+};
+
+/**
+ *
+ * @param {string} precision - day, week, month, year
+ * @return {string} текущее значение в нужном формате: например: 1.Aug.2020, 34.2020, Aug.2020, 2020
+ */
+const getDefaultValueForPrecision = precision => {
+    return moment().format(precisionFormats.get(precision).replace(/:/g, ''));
+};
 
 /**
  *
@@ -126,78 +194,6 @@ const getRealtimeCounterData = async (precision, entryPoint = null, profile = nu
  */
 const getStatsData = async (profile, precision, value) => {
     return storageService.getOperationTotalsData(generateStatsNameWithDate(profile, precision, value));
-};
-
-/**
- * Имя для счетчика
- * @param {string|null} entryPoint название операции
- * @param {string|null} profile профиль запроса
- * @return {string} например, flights:apirequests:ttservice или all:apirequests:default
- */
-const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint || 'all'}:apirequests:${profile || 'all'}`;
-
-/**
- * Имя ключа для статистики запросов, например apirequests:all или apirequests:default
- * @param profile
- * @return {string} например, apirequests:ttservice или apirequests:default
- */
-const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
-
-/**
- * Полное имя ключа с датой для получения статистики запросов
- *
- *
- * "week" - number 0 - 52 optionally year
- * "year" -  number 2020+
- * "month" - number 1 - 12 | string months
- * "day" - 2020.08.19
- *
- * @param {string | null} profile
- * @param {string} precision
- * @param {string | Date | Number} value
- * @return {string} 'stats:2020:apirequests:default' или 'stats:19:Aug:2020:all' или 'stats:34:2020:ttservice'
- */
-const generateStatsNameWithDate = (profile, precision, value) => {
-    assert(config.get('stats.statsPrecisions').indexOf(precision) !== -1, `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
-    return `${generateStatsName(profile)}:${valueToDate(precision, value)}`;
-};
-
-/**
- * year: as is
- * month: as
- * week: 2020W11
- * day: as is
- *
- * @param precision
- * @param value
- * @return {string}
- * @throws validation error
- */
-const valueToDate = (precision, value) => {
-    switch (precision) {
-        case "week":
-            value = validator.normalizeWeek(value);
-            break;
-        case "month":
-            value = validator.normalizeMonth(value);
-            break;
-        case "year":
-            value = validator.normalizeYear(value);
-            break;
-    }
-
-    const date = moment(value);
-    assert(date.isValid(), `Некорректное значение value для ${precision}. Ожидается валидная дата`);
-    return date.format(precisionFormats.get(precision));
-};
-
-/**
- *
- * @param {string} precision - day, week, month, year
- * @return {string} текущее значение в нужном формате: например: 1.Aug.2020, 34.2020, Aug.2020, 2020
- */
-const getDefaultValueForPrecision = precision => {
-    return moment().format(precisionFormats.get(precision).replace(/:/g, ''));
 };
 
 /**
