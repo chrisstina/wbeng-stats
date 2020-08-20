@@ -230,14 +230,13 @@ module.exports = {
      * @return {Promise<{}|null>}
      */
     getAPICallsRealtime: async (precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
-        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         precision = precision || defaultRealtimePrecision;
 
         if (config.get('stats.realtimePrecisions').indexOf(precision) === -1) {
             precision = defaultRealtimePrecision;
             logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
         }
-
+        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         return await getRealtimeCounterData(precision, entryPoint, profile, limit, offset);
     },
 
@@ -258,12 +257,12 @@ module.exports = {
      * @return {Promise<{string: string}>}
      */
     getAPICallsStats: async(profile = null, precision = null, value = null) => {
-        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${`${profile} profile` || 'all profiles'}`);
         precision = precision || defaultStatsPrecision;
         assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
 
         value = value || getDefaultValueForPrecision(precision);
+        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
         return await getStatsData(profile, precision, value);
     },
 
