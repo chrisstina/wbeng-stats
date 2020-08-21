@@ -297,7 +297,7 @@ module.exports = {
 
         const table = {};
 
-        for (const profile in config.get('stats.allowedProfiles')) {
+        for (const profile of config.get('stats.allowedProfiles')) {
             table[profile] = await getStatsData(profile, precision, value);
         }
 
