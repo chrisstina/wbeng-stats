@@ -173,22 +173,29 @@ const getStatsData = async (profile, precision, value) => {
 
 /**
  *
- * @type {{getAllowedRealtimePrecisions: function(), getAllowedStatsPrecisions: function(), validateStatsDate: function(*, *=), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(), validateStatsDate: function(*, *=), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getAPICallsStatsTable: function((String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     /**
-     *
+     * Список допустимых отрезков времени для получения данных реального времени
      * @return {[]}
      */
-    getAllowedRealtimePrecisions: () => {
-        return config.get('stats.realtimePrecisions');
-    },
+    getAllowedRealtimePrecisions: () => config.get('stats.realtimePrecisions'),
     /**
-     *
+     * Список допустимых отрезков времени для получения данных статистики запросов
      * @return {[]}
      */
-    getAllowedStatsPrecisions: () => {
-        return config.get('stats.statsPrecisions');
+    getAllowedStatsPrecisions: () => config.get('stats.statsPrecisions'),
+    /**
+     * Список допустимых названий API методов
+     * @return {[]}
+     */
+    getAllowedOperations: () => config.get('stats.allowedOperations'),
+    /**
+     * Список допустимых названий профилей @todo ask wbeng
+     */
+    getAllowedProfiles: () => {
+        return config.get('stats.allowedProfiles');
     },
     /**
      * Валидирует данные для получения статистики на конкретный отрезок времени
@@ -265,7 +272,37 @@ module.exports = {
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
         return await getStatsData(profile, precision, value);
     },
+    /**
+     * Вернет таблицу данных по всем операциям для каждого профайла.
+     *
+     * Например,
+     * getAPICallsStatsTable("week", 34) // данные для профиля default за последнюю неделю
+     * getAPICallsStatsTable("day", 19.08.2020) // данные для профиля default за 19 августа 2020
+     * getAPICallsStatsTable("month") // все данные за последний месяц
+     * getAPICallsStatsTable("month", "201706") // все данные за июнь 2017 года
+     *
+     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
+     * @param {String|null}value конкретный отрезок времени.
+     *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
+     *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
+     * @return {Promise<{string: {}}>}
+     */
+    getAPICallsStatsTable: async(precision = null, value = null) => {
+        precision = precision || defaultStatsPrecision;
+        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
 
+        value = value || getDefaultValueForPrecision(precision);
+        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, every profile`);
+
+        const table = {};
+
+        for (const profile in config.get('stats.allowedProfiles')) {
+            table[profile] = await getStatsData(profile, precision, value);
+        }
+
+        return table;
+    },
     cleanup: () => {
 
     }

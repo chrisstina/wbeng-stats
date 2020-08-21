@@ -27,6 +27,15 @@ module.exports = {
         "cancel",
         "void"
     ],
+    "allowedProfiles": [
+        "all",
+        "default",
+        "ttservice",
+        "farf",
+        "ttbkz",
+        "goravia",
+        "tsg"
+    ],
     "storage": "redis", // redis | mysql
     "redis": {
         "port": 6379
