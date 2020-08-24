@@ -9,21 +9,20 @@ class RedisStorage extends Storage {
 
     constructor(config) {
         super();
+        this.config = config.get('stats.redis');
+    }
 
-        this.config = config;
-        this.redisClient = (() => {
-            try {
-                return redis.createClient(this.config.get('stats.redis.port') || 6379);
-            } catch (e) {
-                logger.error(e.stack);
-            }
-            return null;
-        })();
+    async connect() {
+        return new Promise((resolve, reject) => {
+            this.client = redis.createClient(this.config.get('port') || 6379);
+            this.client.on("error", reject);
+            this.client.on("ready", resolve);
+        });
     }
 
     updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
 
-        const pipe = this.redisClient.multi(); // открываем транзакцию
+        const pipe = this.client.multi(); // открываем транзакцию
 
         for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
             pipe.zadd(`knowncounters:`, 0, hash, (err, replies) => {
@@ -46,7 +45,7 @@ class RedisStorage extends Storage {
     };
 
     updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {
-        const pipe = this.redisClient.multi(); // открываем транзакцию
+        const pipe = this.client.multi(); // открываем транзакцию
 
         for (const hash of hashesToUpdate) {
             pipe.zadd(`knownstats:`, 0, hash, (err, replies) => {
@@ -69,7 +68,7 @@ class RedisStorage extends Storage {
     };
 
     async getRealtimeCounterData(hash, limit = null, offset = 0) {
-        const retrieveDataAsync = promisify(this.redisClient.hgetall).bind(this.redisClient);
+        const retrieveDataAsync = promisify(this.client.hgetall).bind(this.client);
         try {
             return await retrieveDataAsync(`count:${hash}`);
         } catch (e) {
@@ -78,7 +77,7 @@ class RedisStorage extends Storage {
     };
 
     async getOperationTotalsData(hash) {
-        const retrieveDataAsync = promisify(this.redisClient.hgetall).bind(this.redisClient);
+        const retrieveDataAsync = promisify(this.client.hgetall).bind(this.client);
         try {
             return await retrieveDataAsync(`stats:${hash}`);
         } catch (e) {

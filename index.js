@@ -8,22 +8,34 @@ const assert = require('assert'),
 const logger = require('./logger');
 const validate = require('./validator');
 
+let storageIsReady = false;
+
 const config = require('config');
 config.util.setModuleDefaults('stats', require('./config.js'));
 
 /**
- * @param storageName redis \ mysql
- * @return Storage
- */
-const createStorageService = (storageName) => {
-    const Storage = require(`./storage/${storageName}-storage`);
-    return new Storage(config);
-};
-/**
  *
  * @type {Storage}
  */
-const storageService = createStorageService(config.get('stats.storage'));
+let storageService;
+
+/**
+ *
+ * @param storageName redis \ mysql \ mongo
+ * @return {Promise<void>}
+ */
+const initStorageService = storageName => {
+    const Storage = require(`./storage/${storageName}-storage`);
+    storageService = new Storage(config);
+    return storageService
+        .connect()
+        .then(() => {
+            storageIsReady = true;
+            logger.info(`Подключено хранилище ${storageName}`);
+        }).catch(e => {
+            logger.error(`[STATS][STORAGE] Не удалось подключиться к хранилищу: ${e.stack}`);
+        });
+};
 
 /**
  * Переводит название временного отрезка в секунды. Например, "1 minutes" => 60
@@ -176,6 +188,9 @@ const getStatsData = async (profile, precision, value) => {
  * @type {{getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(), validateStatsDate: function(*, *=), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getAPICallsStatsTable: function((String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
+    connect: () => {
+        return initStorageService(config.get('stats.storage'));
+    },
     /**
      * Список допустимых отрезков времени для получения данных реального времени
      * @return {[]}
@@ -194,9 +209,7 @@ module.exports = {
     /**
      * Список допустимых названий профилей @todo ask wbeng
      */
-    getAllowedProfiles: () => {
-        return config.get('stats.allowedProfiles');
-    },
+    getAllowedProfiles: () => config.get('stats.allowedProfiles'),
     /**
      * Валидирует данные для получения статистики на конкретный отрезок времени
      * @param precision
@@ -214,6 +227,7 @@ module.exports = {
 
         assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
         assert(expressRequest.profile !== undefined, 'Need profile');
+        assert(storageIsReady);
 
         const {entryPoint, profile} = expressRequest;
 
@@ -237,6 +251,8 @@ module.exports = {
      * @return {Promise<{}|null>}
      */
     getAPICallsRealtime: async (precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+        assert(storageIsReady);
+
         precision = precision || defaultRealtimePrecision;
 
         if (config.get('stats.realtimePrecisions').indexOf(precision) === -1) {
@@ -264,6 +280,8 @@ module.exports = {
      * @return {Promise<{string: string}>}
      */
     getAPICallsStats: async(profile = null, precision = null, value = null) => {
+        assert(storageIsReady);
+
         precision = precision || defaultStatsPrecision;
         assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
@@ -288,6 +306,8 @@ module.exports = {
      * @return {Promise<{string: {}}>}
      */
     getAPICallsStatsTable: async(precision = null, value = null) => {
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
+
         precision = precision || defaultStatsPrecision;
         assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);

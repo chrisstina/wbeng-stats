@@ -1,4 +1,6 @@
 class Storage {
+    async connect() {};
+
     /**
      *
      * @param timeSlicedHashes {Map<Number, String>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
