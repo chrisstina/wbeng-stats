@@ -25,23 +25,20 @@ class MongoStorage extends Storage {
 
     /**
      *
-     * @param timeSlicedHashes {Map<Number, String>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
+     * @param timeSlicedHashes {Map<Number, String>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:allmethods:allprofiles3600
      * @param updateBy
      */
     async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
         try {
             const database = this.client.db("wbeng-stats");
             const collection = database.collection(COUNTER_COLLECTION);
-            let updateDoc = {
-                $inc: {}
-            };
-            let countType; // apirequests, errors, etc. Берется из первого сегмента ключа.
             for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
-                let hashParts = hash.split(HASH_DELIMITER);
-                countType = hashParts.shift();
-                updateDoc.$inc[`${hashParts.join(HASH_DELIMITER)}.${timeSlice}`] = updateBy;
+                let updateDoc = {
+                    $inc: {}
+                };
+                updateDoc.$inc[`${timeSlice}`] = updateBy;
+                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
             }
-            await collection.updateOne({key: countType}, updateDoc, {upsert: true});
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }
@@ -71,7 +68,17 @@ class MongoStorage extends Storage {
     }
 
     async getRealtimeCounterData(hash, limit = null, offset = 0) {
+        const database = this.client.db(this.config.dbName);
+        const collection = database.collection(COUNTER_COLLECTION);
+        const stats = await collection.findOne({key: hash});
 
+        if (stats === null) {
+            return {};
+        }
+
+        delete stats._id;
+        delete stats.key;
+        return stats;
     }
 
     async getOperationTotalsData(hash) {

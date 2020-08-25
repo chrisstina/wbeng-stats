@@ -176,7 +176,7 @@ const incrementOperationTotals = (entryPoint, profile = null) => {
  * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
  */
 const getRealtimeCounterData = async (precision, entryPoint = null, profile = null, limit = null, offset = 0) => {
-    return storageService.getRealtimeCounterData(`${precisionsInSeconds.get(precision)}:${generateCounterName(entryPoint, profile)}`);
+    return storageService.getRealtimeCounterData(`${generateCounterName(entryPoint, profile)}:${precisionsInSeconds.get(precision)}`);
 };
 
 /**
