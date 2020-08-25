@@ -2,8 +2,9 @@ const {MongoClient} = require("mongodb");
 
 const logger = require('./../logger');
 
-const COUNTER_COLLECTION = 'count';
+const COUNTER_COLLECTION = 'realtime';
 const STATS_COLLECTION = 'stats';
+const HASH_DELIMITER = ':';
 
 const Storage = require('./storage');
 
@@ -34,10 +35,13 @@ class MongoStorage extends Storage {
             let updateDoc = {
                 $inc: {}
             };
+            let countType; // apirequests, errors, etc. Берется из первого сегмента ключа.
             for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
-                updateDoc.$inc[`${hash}.${timeSlice}`] = updateBy;
+                let hashParts = hash.split(HASH_DELIMITER);
+                countType = hashParts.shift();
+                updateDoc.$inc[`${hashParts.join(HASH_DELIMITER)}.${timeSlice}`] = updateBy;
             }
-            await collection.updateOne({key: "count"}, updateDoc, {upsert: true}); // todo count заменить на apirequests
+            await collection.updateOne({key: countType}, updateDoc, {upsert: true});
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }
