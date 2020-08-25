@@ -78,6 +78,11 @@ class MongoStorage extends Storage {
         const database = this.client.db(this.config.dbName);
         const collection = database.collection(STATS_COLLECTION);
         const stats = await collection.findOne({key: hash});
+
+        if (stats === null) {
+            return {};
+        }
+
         delete stats._id;
         delete stats.key;
         return stats;
