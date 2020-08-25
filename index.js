@@ -8,6 +8,9 @@ const assert = require('assert'),
 const logger = require('./logger');
 const validate = require('./validator');
 
+const ALL_PROFILES_KEY = 'allprofiles';
+const ALL_METHODS_KEY = 'allmethods';
+
 let storageIsReady = false;
 
 const config = require('config');
@@ -83,16 +86,16 @@ config.get('stats.statsPrecisions').forEach((precision, idx) => {
  * Имя для счетчика
  * @param {string|null} entryPoint название операции
  * @param {string|null} profile профиль запроса
- * @return {string} например, flights:apirequests:ttservice или all:apirequests:default
+ * @return {string} например, apirequests:flights::ttservice или apirequests:allmethids:default
  */
-const generateCounterName = (entryPoint = null, profile = null) => `apirequests:${entryPoint || 'allmethods'}:${profile || 'allprofiles'}`;
+const generateCounterName = (entryPoint = null, profile = null) => `apirequests:${entryPoint || ALL_METHODS_KEY}:${profile || ALL_PROFILES_KEY}`;
 
 /**
  * Имя ключа для статистики запросов, например apirequests:all или apirequests:default
  * @param profile
  * @return {string} например, apirequests:ttservice или apirequests:default
  */
-const generateStatsName = (profile = null) => `apirequests:${profile || 'all'}`;
+const generateStatsName = (profile = null) => `apirequests:${profile || ALL_PROFILES_KEY}`;
 
 /**
  * Нормализует полученное значение value и приводит его к нужной дате.
