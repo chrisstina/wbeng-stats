@@ -42,7 +42,7 @@ module.exports = {
     },
     "mysql": {},
     "mongo": {
-        "connectionUri": "mongodb+srv://wbengStatsUser:AY6T7FFxzN@wbeng-stats.wepfa.mongodb.net/wbeng-stats?retryWrites=true&w=majority",
+        "connectionUri": "",
         "dbName": "wbeng-stats",
     }
 };
