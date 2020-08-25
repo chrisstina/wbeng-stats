@@ -20,7 +20,7 @@ class RedisStorage extends Storage {
         });
     }
 
-    updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
+    async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
 
         const pipe = this.client.multi(); // открываем транзакцию
 
@@ -44,7 +44,7 @@ class RedisStorage extends Storage {
         });
     };
 
-    updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {
+    async updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {
         const pipe = this.client.multi(); // открываем транзакцию
 
         for (const hash of hashesToUpdate) {

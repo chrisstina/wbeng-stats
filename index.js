@@ -25,16 +25,20 @@ let storageService;
  * @return {Promise<void>}
  */
 const initStorageService = storageName => {
-    const Storage = require(`./storage/${storageName}-storage`);
-    storageService = new Storage(config);
-    return storageService
-        .connect()
-        .then(() => {
-            storageIsReady = true;
-            logger.info(`Подключено хранилище ${storageName}`);
-        }).catch(e => {
-            logger.error(`[STATS][STORAGE] Не удалось подключиться к хранилищу: ${e.stack}`);
-        });
+    try {
+        const Storage = require(`./storage/${storageName}-storage`);
+        storageService = new Storage(config);
+        return storageService
+            .connect()
+            .then(() => {
+                storageIsReady = true;
+                logger.info(`[STATS][STORAGE] Подключено хранилище ${storageName}`);
+            }).catch(e => {
+                logger.error(`[STATS][STORAGE] Не удалось подключиться к хранилищу: ${e.stack}`);
+            });
+    } catch (e) {
+        logger.error(`[STATS][STORAGE] Не удалось найти хранилище: ${e.stack}`);
+    }
 };
 
 /**
@@ -81,7 +85,7 @@ config.get('stats.statsPrecisions').forEach((precision, idx) => {
  * @param {string|null} profile профиль запроса
  * @return {string} например, flights:apirequests:ttservice или all:apirequests:default
  */
-const generateCounterName = (entryPoint = null, profile = null) => `${entryPoint || 'all'}:apirequests:${profile || 'all'}`;
+const generateCounterName = (entryPoint = null, profile = null) => `apirequests:${entryPoint || 'allmethods'}:${profile || 'allprofiles'}`;
 
 /**
  * Имя ключа для статистики запросов, например apirequests:all или apirequests:default
@@ -122,6 +126,7 @@ const getDefaultValueForPrecision = precision => {
  *
  * @param entryPoint
  * @param profile
+ * @return {Promise<*>}
  */
 const incrementRealtimeCounter = (entryPoint = null, profile = null) => {
     const keyName = generateCounterName(entryPoint, profile);
@@ -132,11 +137,10 @@ const incrementRealtimeCounter = (entryPoint = null, profile = null) => {
     const timeSlicedHashes = new Map();
     config.get('stats.realtimePrecisions').forEach(precision => {
         const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
-        timeSlicedHashes.set(getTimeSliceStart(precisionInSeconds), `${precisionInSeconds}:${keyName}`);
-        return `${precisionInSeconds}:${keyName}`;
+        timeSlicedHashes.set(getTimeSliceStart(precisionInSeconds), `${keyName}:${precisionInSeconds}`);
     });
 
-    storageService.updateRealtimeCounter(timeSlicedHashes);
+    return storageService.updateRealtimeCounter(timeSlicedHashes);
 };
 
 /**

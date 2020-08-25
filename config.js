@@ -28,7 +28,7 @@ module.exports = {
         "void"
     ],
     "allowedProfiles": [
-        "all",
+        "allprofiles",
         "default",
         "ttservice",
         "farf",
@@ -36,9 +36,13 @@ module.exports = {
         "goravia",
         "tsg"
     ],
-    "storage": "redis", // redis | mysql
+    "storage": "mongo", // redis | mysql | mongo
     "redis": {
         "port": 6379
     },
-    "mysql": {}
+    "mysql": {},
+    "mongo": {
+        "connectionUri": "mongodb+srv://wbengStatsUser:AY6T7FFxzN@wbeng-stats.wepfa.mongodb.net/wbeng-stats?retryWrites=true&w=majority",
+        "dbName": "wbeng-stats",
+    }
 };
