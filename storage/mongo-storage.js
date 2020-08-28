@@ -4,6 +4,10 @@ const logger = require('./../logger');
 
 const COUNTER_COLLECTION = 'realtime';
 const STATS_COLLECTION = 'stats';
+const META_COLLECTION = 'meta';
+const COUNTER_META_TYPE = 'known_realtime_keys';
+const STATS_META_TYPE = 'known_stats_keys';
+
 const HASH_DELIMITER = ':';
 
 const Storage = require('./storage');
@@ -32,12 +36,15 @@ class MongoStorage extends Storage {
         try {
             const database = this.client.db("wbeng-stats");
             const collection = database.collection(COUNTER_COLLECTION);
+            const metaCollection = database.collection(META_COLLECTION);
+
             for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
                 let updateDoc = {
                     $inc: {}
                 };
                 updateDoc.$inc[`${timeSlice}`] = updateBy;
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
+                await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
@@ -54,6 +61,8 @@ class MongoStorage extends Storage {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(STATS_COLLECTION);
+            const metaCollection = database.collection(META_COLLECTION);
+
             let updateDoc = {
                 $inc: {}
             };
@@ -61,6 +70,7 @@ class MongoStorage extends Storage {
             for (const hash of hashesToUpdate) {
                 updateDoc.$inc[operation] = updateBy;
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true}); // @todo оптимизировать
+                await metaCollection.updateOne({type: STATS_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
