@@ -165,6 +165,15 @@ const incrementOperationTotals = (entryPoint, profile = null) => {
     storageService.updateOperationTotals(entryPoint, hashes);
 };
 
+const incrementProviderOperationTotals = (providerCode, entryPoint, profile = null) => {
+    const keyName = generateStatsName(profile);
+    const hashes = config.get('stats.statsPrecisions').map(precision => {
+        const formattedDate = moment().format(precisionFormats.get(precision));
+        return `${keyName}:${formattedDate}`;
+    });
+    storageService.updateProviderOperationTotals(providerCode, entryPoint, hashes);
+};
+
 /**
  * Получение данных статистики реального времени
  *
@@ -246,6 +255,17 @@ module.exports = {
             incrementRealtimeCounter(entryPoint, profile); // конкретный тип запроса пользователя
             incrementOperationTotals(entryPoint, profile);
         }
+    },
+
+    /**
+     * Обновит счетчик обращений к АПИ конкретного провайдера
+     *
+     * @param {{name: string, code: string}} provider
+     * @param {{profile: string, entryPoint: string, WBtoken: string}} parameters
+     */
+    updateProviderAPICalls: (provider, parameters) => {
+        incrementProviderOperationTotals(provider.code, parameters.entryPoint);
+        incrementProviderOperationTotals(provider.code, parameters.entryPoint, parameters.profile);
     },
 
     /**

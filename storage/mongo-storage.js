@@ -4,9 +4,11 @@ const logger = require('./../logger');
 
 const COUNTER_COLLECTION = 'realtime';
 const STATS_COLLECTION = 'stats';
+const PROVIDER_STATS_COLLECTION = 'provider_stats_';
 const META_COLLECTION = 'meta';
 const COUNTER_META_TYPE = 'known_realtime_keys';
 const STATS_META_TYPE = 'known_stats_keys';
+const PROVIDER_STATS_META_TYPE = 'known_provider_stats_keys';
 
 const HASH_DELIMITER = ':';
 
@@ -69,8 +71,28 @@ class MongoStorage extends Storage {
 
             for (const hash of hashesToUpdate) {
                 updateDoc.$inc[operation] = updateBy;
-                await collection.updateOne({key: hash}, updateDoc, {upsert: true}); // @todo оптимизировать
+                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
                 await metaCollection.updateOne({type: STATS_META_TYPE}, {$addToSet: {keys: hash}});
+            }
+        } catch (e) {
+            logger.error('[STATS][STORAGE][MONGO]' + e.stack);
+        }
+    }
+
+    async updateProviderOperationTotals(provider, operation, hashesToUpdate, updateBy = 1) {
+        try {
+            const database = this.client.db(this.config.dbName);
+            const collection = database.collection(`${PROVIDER_STATS_COLLECTION}${provider}`);
+            const metaCollection = database.collection(META_COLLECTION);
+
+            let updateDoc = {
+                $inc: {}
+            };
+            updateDoc.$inc[operation] = updateBy;
+
+            for (const hash of hashesToUpdate) {
+                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
+                await metaCollection.updateOne({type: PROVIDER_STATS_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);

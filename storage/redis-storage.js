@@ -67,6 +67,10 @@ class RedisStorage extends Storage {
         });
     };
 
+    async updateProviderOperationTotals(provider, operation, hashesToUpdate, updateBy = 1) {
+        throw new Error('Not implemented');
+    }
+
     async getRealtimeCounterData(hash, limit = null, offset = 0) {
         const retrieveDataAsync = promisify(this.client.hgetall).bind(this.client);
         try {

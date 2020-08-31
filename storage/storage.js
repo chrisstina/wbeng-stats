@@ -21,6 +21,16 @@ class Storage {
     async updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {}
 
     /**
+     * Обновляет статистику запросов на операцию конкретного провайдера по временным отрезкам.
+     * @param {String} provider код провайдера (1S, 1H, etc)
+     * @param {String} operation название API операции (entryPoint)
+     * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
+     * @param {Number} updateBy default 1
+     * @return {Promise<void>}
+     */
+    async updateProviderOperationTotals(provider, operation, hashesToUpdate, updateBy = 1) {}
+
+    /**
      * Возвращает разбивку событий по временным промежуткам
      * @param {String} hash
      * @param limit
