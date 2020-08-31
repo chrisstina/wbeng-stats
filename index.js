@@ -200,6 +200,16 @@ const getStatsData = async (profile, precision, value) => {
 };
 
 /**
+ * @param provider
+ * @param profile
+ * @param precision
+ * @param value
+ * @return {Promise<{string: string}>} {<operationName>: hits, <operationName2>: hits}
+ */
+const getProviderStatsData = async (provider, profile, precision, value) => {
+    return storageService.getProviderOperationTotalsData(provider, `${generateStatsName(profile)}:${valueToDate(precision, value)}`);
+};
+/**
  *
  * @type {{getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(), validateStatsDate: function(*, *=), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getAPICallsStatsTable: function((String|null)=, (String|null)=), cleanup: function()}}
  */
@@ -316,6 +326,28 @@ module.exports = {
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
         return await getStatsData(profile, precision, value);
+    },
+    /**
+     * Вернет статистику по всем запросам указанного провайдера за указанный промежуток времени.
+     *
+     * @param {String} provider код провайдера
+     * @param {String|null} profile
+     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
+     * @param {String|null}value конкретный отрезок времени.
+     *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
+     *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
+     * @return {Promise<{string: string}>}
+     */
+    getProviderAPICallsStats: async (provider, profile = null, precision = null, value = null) => {
+        assert(storageIsReady);
+
+        precision = precision || defaultStatsPrecision;
+        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+
+        value = value || getDefaultValueForPrecision(precision);
+        logger.verbose(`[STATS][VIEW] Retrieve ${provider} API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
+        return await getProviderStatsData(provider, profile, precision, value);
     },
     /**
      * Вернет таблицу данных по всем операциям для каждого профайла.

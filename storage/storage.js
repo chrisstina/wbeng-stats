@@ -45,6 +45,14 @@ class Storage {
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
     async getOperationTotalsData(hash) {}
+
+    /**
+     * Возвращает разбивку по количеству операций на указанный промежок времени (ключ) для провайдера
+     * @param provider код провайдера
+     * @param hash ключ, например apirequests:default:2020:W35
+     * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
+     */
+    async getProviderOperationTotalsData(provider, hash) {}
 }
 
 module.exports = Storage;

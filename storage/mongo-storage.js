@@ -126,6 +126,20 @@ class MongoStorage extends Storage {
         delete stats.key;
         return stats;
     }
+
+    async getProviderOperationTotalsData(provider, hash) {
+        const database = this.client.db(this.config.dbName);
+        const collection = database.collection(`${PROVIDER_STATS_COLLECTION}${provider}`);
+        const stats = await collection.findOne({key: hash});
+
+        if (stats === null) {
+            return {};
+        }
+
+        delete stats._id;
+        delete stats.key;
+        return stats;
+    }
 }
 
 module.exports = MongoStorage;
