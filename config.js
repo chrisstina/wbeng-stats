@@ -36,6 +36,20 @@ module.exports = {
         "goravia",
         "tsg"
     ],
+    "allowedProviders": [
+        "1S",
+        "2S",
+        "1H",
+        "2H",
+        "1A",
+        "TA",
+        "TS",
+        "S7",
+        "DP",
+        "AC",
+        "KW",
+        "1B"
+    ],
     "storage": "mongo", // redis | mysql | mongo
     "redis": {
         "port": 6379
