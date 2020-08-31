@@ -211,7 +211,7 @@ const getProviderStatsData = async (provider, profile, precision, value) => {
 };
 /**
  *
- * @type {{getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(), validateStatsDate: function(*, *=), updateAPICalls: function(*), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getAPICallsStatsTable: function((String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     connect: () => {
@@ -353,10 +353,10 @@ module.exports = {
      * Вернет таблицу данных по всем операциям для каждого профайла.
      *
      * Например,
-     * getAPICallsStatsTable("week", 34) // данные для профиля default за последнюю неделю
-     * getAPICallsStatsTable("day", 19.08.2020) // данные для профиля default за 19 августа 2020
-     * getAPICallsStatsTable("month") // все данные за последний месяц
-     * getAPICallsStatsTable("month", "201706") // все данные за июнь 2017 года
+     * getAPICallsStatsByProfile("week", 34) // данные для профиля default за последнюю неделю
+     * getAPICallsStatsByProfile("day", 19.08.2020) // данные для профиля default за 19 августа 2020
+     * getAPICallsStatsByProfile("month") // все данные за последний месяц
+     * getAPICallsStatsByProfile("month", "201706") // все данные за июнь 2017 года
      *
      * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
      * @param {String|null}value конкретный отрезок времени.
@@ -364,7 +364,7 @@ module.exports = {
      *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
      * @return {Promise<{string: {}}>}
      */
-    getAPICallsStatsTable: async(precision = null, value = null) => {
+    getAPICallsStatsByProfile: async(precision = null, value = null) => {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
@@ -382,7 +382,41 @@ module.exports = {
 
         return table;
     },
-    cleanup: () => {
+    /**
+     * Вернет таблицу данных по всем операциям для указанного профайла и провайдера.
+     *
+     * Например,
+     * getAPICallsStatsByProfile("week", 34) // данные для профиля default за последнюю неделю
+     * getAPICallsStatsByProfile("day", 19.08.2020) // данные для профиля default за 19 августа 2020
+     * getAPICallsStatsByProfile("month") // все данные за последний месяц
+     * getAPICallsStatsByProfile("month", "201706") // все данные за июнь 2017 года
+     *
+     * @param {String} profile
+     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
+     * @param {String|null}value конкретный отрезок времени.
+     *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
+     *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
+     * @return {Promise<{string: {}}>}
+     */
+    getAPICallsStatsByProvider: async(profile, precision = null, value = null) => {
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
+        precision = precision || defaultStatsPrecision;
+        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+
+        value = value || getDefaultValueForPrecision(precision);
+        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, for profile ${profile}, every provider`);
+
+        const table = {};
+
+        for (const provider of config.get('stats.allowedProviders')) {
+            table[provider] = await getProviderStatsData(provider, profile, precision, value);
+        }
+
+        return table;
+    },
+    cleanup: async () => {
+        return await cleanupRealtimeCounter();
     }
 };
