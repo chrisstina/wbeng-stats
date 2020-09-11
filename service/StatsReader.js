@@ -2,8 +2,9 @@ const keyModule = require('./statsKey'),
     precisionModule = require('./precision');
 
 class StatsReader {
-    constructor(storageService, statType) {
+    constructor(storageService, statType = 'request') {
         this._storage = storageService;
+        this._type = statType;
         this._env = process.env.NODE_ENV || 'test';
     }
 
@@ -19,7 +20,7 @@ class StatsReader {
      * @return {Promise<{string: string}>} {<operationName>: hits, <ioerationName2>: hits}
      */
     async getStatsData (profile, precision, value) {
-        return this._storage.getOperationTotalsData(`${keyModule.generateStatsName('request', profile)}:${precisionModule.valueToDate(precision, value)}`);
+        return this._storage.getOperationTotalsData(`${keyModule.generateStatsName(this._type, profile)}:${precisionModule.valueToDate(precision, value)}`);
     };
 
 
@@ -46,7 +47,7 @@ class StatsReader {
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
     async getRealtimeCounterData(precision, entryPoint = null, profile = null, limit = null, offset = 0) {
-        return this._storage.getRealtimeCounterData(`${keyModule.generateCounterName('request', entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+        return this._storage.getRealtimeCounterData(`${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
     };
 }
 

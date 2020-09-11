@@ -56,8 +56,8 @@ const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
 const getDefaultValueForPrecision = precision =>  moment().format(precisionFormats.get(precision).replace(/:/g, ''));
 
 /**
- *
- * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
+ * 
+ * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIErrorsRealtime: function((string|null)=, (string|null)=, (string|null)=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     connect: () => {
@@ -150,6 +150,26 @@ module.exports = {
         logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService);
         return await reader.getRealtimeCounterData(precision, entryPoint, profile, limit, offset);
+    },
+    /**
+     *
+     * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
+     * @param {string|null} entryPoint
+     * @param {string|null} profile
+     * @return {Promise<{}|null>}
+     */
+    getAPIErrorsRealtime: async (precision = null, entryPoint = null, profile = null) => {
+        assert(storageIsReady);
+
+        precision = precision || defaultRealtimePrecision;
+
+        if (config.get('stats.realtimePrecisions').indexOf(precision) === -1) {
+            precision = defaultRealtimePrecision;
+            logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
+        }
+        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
+        const reader = new StatsReader(storageService, 'error');
+        return await reader.getRealtimeCounterData(precision, entryPoint, profile);
     },
 
     /**
