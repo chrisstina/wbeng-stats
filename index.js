@@ -13,7 +13,7 @@ const validate = require('./validator');
 
 const StatsUpdater = require('./service/StatsUpdater');
 const StatsReader = require('./service/StatsReader');
-const {precisionsInSeconds, precisionFormats} = require('./service/precision');
+const {precisionFormats} = require('./service/precision');
 
 let storageIsReady = false;
 
@@ -45,103 +45,19 @@ const initStorageService = storageName => {
     }
 };
 
-/**
- * Переводит название временного отрезка в секунды. Например, "1 minutes" => 60
- * @param {string} precision - precision title from config, e.g. "1 minutes", "3 months"
- * @return {number}
- */
-const getPrecisionInSeconds = precision => {
-    const [duration, unit] = precision.split(" ");
-    return moment.duration(parseInt(duration), unit).asSeconds();
-};
-
 const defaultRealtimePrecision = config.get('stats.realtimePrecisions')[0];
 const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
-
-/**
- * Имя для счетчика
- * @param {string} type тип записи - request | error
- * @param {string|null} entryPoint название операции
- * @param {string|null} profile профиль запроса
- * @return {string} например, apirequests:flights::ttservice или apirequests:allmethids:default
- */
-const generateCounterName = (type, entryPoint = null, profile = null) => `${type === 'error' ? API_ERRORS_KEY:  API_REQUESTS_KEY}:${entryPoint || ALL_METHODS_KEY}:${profile || ALL_PROFILES_KEY}`;
-
-/**
- * Имя ключа для статистики запросов, например apirequests:all или apirequests:default
- * @param {string} type тип записи - request | error
- * @param profile
- * @return {string} например, apirequests:ttservice или apirequests:default
- */
-const generateStatsName = (type, profile = null) => `${type === 'error' ? API_ERRORS_KEY:  API_REQUESTS_KEY}:${profile || ALL_PROFILES_KEY}`;
-
-/**
- * Нормализует полученное значение value и приводит его к нужной дате.
- *
- * Если задан отрезок (precision) - год, вернет номер года (если не указан, то текущий)
- * Если задан отрезок (precision) - неделя, вернет номер недели с годом в формате moment (если не указано, то текущая неделя текущего года, если указана только неделя - неделя текущего года)
- * Если задан отрезок (precision) - год, вернет номер года (текущий, или переданный)
- *
- * @param {string} precision year / month / week / day
- * @param {string} value дата в формате Moment (2020-08-19, 2020W34, 32, 1)
- * @return {string} дата для формирования ключа, например, 2020:, 2020:08, 2020:W34
- * @throws validation error
- */
-const valueToDate = (precision, value) => {
-    value = validate.normalizers[precision](value);
-    const date = moment(value);
-    assert(date.isValid(), `Некорректное значение value для ${precision}. Ожидается валидная дата`);
-    return date.format(precisionFormats.get(precision));
-};
 
 /**
  *
  * @param {string} precision - day, week, month, year
  * @return {string} текущее значение в нужном формате: например: 1.Aug.2020, 34.2020, Aug.2020, 2020
  */
-const getDefaultValueForPrecision = precision => {
-    return moment().format(precisionFormats.get(precision).replace(/:/g, ''));
-};
-
-/**
- * Получение данных статистики реального времени
- *
- * @param {String} precision название временного отрезка (1 minutes, 3 months, etc)
- * @param {String|null} entryPoint
- * @param {String|null} profile
- * @param {Number|null} limit
- * @param {Number} offset
- * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
- */
-const getRealtimeCounterData = async (precision, entryPoint = null, profile = null, limit = null, offset = 0) => {
-    return storageService.getRealtimeCounterData(`${generateCounterName(entryPoint, profile)}:${precisionsInSeconds.get(precision)}`);
-};
+const getDefaultValueForPrecision = precision =>  moment().format(precisionFormats.get(precision).replace(/:/g, ''));
 
 /**
  *
- * @param profile
- * @param precision
- * @param value
- * @return {Promise<{string: string}>} {<operationName>: hits, <ioerationName2>: hits}
- */
-const getStatsData = async (profile, precision, value) => {
-    return storageService.getOperationTotalsData(`${generateStatsName('request', profile)}:${valueToDate(precision, value)}`);
-};
-
-/**
- * @param provider
- * @param profile
- * @param precision
- * @param value
- * @return {Promise<{string: string}>} {<operationName>: hits, <operationName2>: hits}
- */
-const getProviderStatsData = async (provider, profile, precision, value) => {
-    return storageService.getProviderOperationTotalsData(provider, `${generateStatsName('request', profile)}:${valueToDate(precision, value)}`);
-};
-
-/**
- *
- * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     connect: () => {
@@ -232,7 +148,8 @@ module.exports = {
             logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
         }
         logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
-        return await getRealtimeCounterData(precision, entryPoint, profile, limit, offset);
+        const reader = new StatsReader(storageService);
+        return await reader.getRealtimeCounterData(precision, entryPoint, profile, limit, offset);
     },
 
     /**
@@ -260,7 +177,8 @@ module.exports = {
 
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
-        return await getStatsData(profile, precision, value);
+        const reader = new StatsReader(storageService);
+        return await reader.getStatsData(profile, precision, value);
     },
     /**
      * Вернет статистику по всем запросам указанного провайдера за указанный промежуток времени.
@@ -282,7 +200,8 @@ module.exports = {
 
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve ${provider} API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
-        return await getProviderStatsData(provider, profile, precision, value);
+        const reader = new StatsReader(storageService);
+        return await reader.getProviderStatsData(provider, profile, precision, value);
     },
     /**
      * Вернет таблицу данных по всем операциям для каждого профайла.
@@ -309,10 +228,11 @@ module.exports = {
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, every profile`);
 
+        const reader = new StatsReader(storageService);
         const table = {};
 
         for (const profile of config.get('stats.allowedProfiles')) {
-            table[profile] = await getStatsData(profile, precision, value);
+            table[profile] = await reader.getStatsData(profile, precision, value);
         }
 
         return table;
@@ -343,10 +263,11 @@ module.exports = {
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, for profile ${profile}, every provider`);
 
+        const reader = new StatsReader(storageService);
         const table = {};
 
         for (const provider of config.get('stats.allowedProviders')) {
-            table[provider] = await getProviderStatsData(provider, profile, precision, value);
+            table[provider] = await reader.getProviderStatsData(provider, profile, precision, value);
         }
 
         return table;
