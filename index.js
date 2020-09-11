@@ -3,18 +3,19 @@
  */
 
 const assert = require('assert'),
+    config = require('config'),
     moment = require('moment');
+
+config.util.setModuleDefaults('stats', require('./config.js'));
 
 const logger = require('./logger');
 const validate = require('./validator');
 
-const ALL_PROFILES_KEY = 'allprofiles';
-const ALL_METHODS_KEY = 'allmethods';
+const StatsUpdater = require('./service/StatsUpdater');
+const StatsReader = require('./service/StatsReader');
+const {precisionsInSeconds, precisionFormats} = require('./service/precision');
 
 let storageIsReady = false;
-
-const config = require('config');
-config.util.setModuleDefaults('stats', require('./config.js'));
 
 /**
  *
@@ -54,48 +55,25 @@ const getPrecisionInSeconds = precision => {
     return moment.duration(parseInt(duration), unit).asSeconds();
 };
 
-/**
- * получаем начало текущего временного отрезка в timestamp
- * @param precisionInSeconds
- * @return {number} timestamp в секундах
- */
-const getTimeSliceStart = precisionInSeconds => parseInt(moment().unix() / precisionInSeconds) * precisionInSeconds;
-
 const defaultRealtimePrecision = config.get('stats.realtimePrecisions')[0];
 const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
 
 /**
- * Ассоциация названия отрезка и его длительности в секундах
- * @type {Map<String, Number>}
- */
-const precisionsInSeconds = new Map();
-config.get('stats.realtimePrecisions').forEach(precision => {
-    precisionsInSeconds.set(precision, getPrecisionInSeconds(precision));
-});
-
-/**
- * Ассоциация названия временного отрезка и его формата для moment
- * @type {Map<String, String>}
- */
-const precisionFormats = new Map();
-config.get('stats.statsPrecisions').forEach((precision, idx) => {
-    precisionFormats.set(precision, config.get('stats.precisionFormats')[idx])
-});
-
-/**
  * Имя для счетчика
+ * @param {string} type тип записи - request | error
  * @param {string|null} entryPoint название операции
  * @param {string|null} profile профиль запроса
  * @return {string} например, apirequests:flights::ttservice или apirequests:allmethids:default
  */
-const generateCounterName = (entryPoint = null, profile = null) => `apirequests:${entryPoint || ALL_METHODS_KEY}:${profile || ALL_PROFILES_KEY}`;
+const generateCounterName = (type, entryPoint = null, profile = null) => `${type === 'error' ? API_ERRORS_KEY:  API_REQUESTS_KEY}:${entryPoint || ALL_METHODS_KEY}:${profile || ALL_PROFILES_KEY}`;
 
 /**
  * Имя ключа для статистики запросов, например apirequests:all или apirequests:default
+ * @param {string} type тип записи - request | error
  * @param profile
  * @return {string} например, apirequests:ttservice или apirequests:default
  */
-const generateStatsName = (profile = null) => `apirequests:${profile || ALL_PROFILES_KEY}`;
+const generateStatsName = (type, profile = null) => `${type === 'error' ? API_ERRORS_KEY:  API_REQUESTS_KEY}:${profile || ALL_PROFILES_KEY}`;
 
 /**
  * Нормализует полученное значение value и приводит его к нужной дате.
@@ -126,55 +104,6 @@ const getDefaultValueForPrecision = precision => {
 };
 
 /**
- *
- * @param entryPoint
- * @param profile
- * @return {Promise<*>}
- */
-const incrementRealtimeCounter = (entryPoint = null, profile = null) => {
-    const keyName = generateCounterName(entryPoint, profile);
-    /**
-     *
-     * @type {Map<Number, String>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
-     */
-    const timeSlicedHashes = new Map();
-    config.get('stats.realtimePrecisions').forEach(precision => {
-        const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
-        timeSlicedHashes.set(getTimeSliceStart(precisionInSeconds), `${keyName}:${precisionInSeconds}`);
-    });
-
-    return storageService.updateRealtimeCounter(timeSlicedHashes);
-};
-
-/**
- * Обновляет статистику запросов по временным отрезкам. Примеры ключей:
- * apirequests:default:2020:12:30
- * apirequests:all:2020:w42
- * apirequests:ttservice:2020
- * apirequests:all:2020:08
- *
- * @param entryPoint название операции
- * @param {string|null} profile
- */
-const incrementOperationTotals = (entryPoint, profile = null) => {
-    const keyName = generateStatsName(profile);
-    const hashes = config.get('stats.statsPrecisions').map(precision => {
-        const formattedDate = moment().format(precisionFormats.get(precision));
-        return `${keyName}:${formattedDate}`;
-    });
-    storageService.updateOperationTotals(entryPoint, hashes);
-};
-
-const incrementProviderOperationTotals = (providerCode, entryPoint, profile = null) => {
-    const keyName = generateStatsName(profile);
-    const hashes = config.get('stats.statsPrecisions').map(precision => {
-        const formattedDate = moment().format(precisionFormats.get(precision));
-        return `${keyName}:${formattedDate}`;
-    });
-    storageService.updateProviderOperationTotals(providerCode, entryPoint, hashes);
-};
-
-/**
  * Получение данных статистики реального времени
  *
  * @param {String} precision название временного отрезка (1 minutes, 3 months, etc)
@@ -196,7 +125,7 @@ const getRealtimeCounterData = async (precision, entryPoint = null, profile = nu
  * @return {Promise<{string: string}>} {<operationName>: hits, <ioerationName2>: hits}
  */
 const getStatsData = async (profile, precision, value) => {
-    return storageService.getOperationTotalsData(`${generateStatsName(profile)}:${valueToDate(precision, value)}`);
+    return storageService.getOperationTotalsData(`${generateStatsName('request', profile)}:${valueToDate(precision, value)}`);
 };
 
 /**
@@ -207,11 +136,12 @@ const getStatsData = async (profile, precision, value) => {
  * @return {Promise<{string: string}>} {<operationName>: hits, <operationName2>: hits}
  */
 const getProviderStatsData = async (provider, profile, precision, value) => {
-    return storageService.getProviderOperationTotalsData(provider, `${generateStatsName(profile)}:${valueToDate(precision, value)}`);
+    return storageService.getProviderOperationTotalsData(provider, `${generateStatsName('request', profile)}:${valueToDate(precision, value)}`);
 };
+
 /**
  *
- * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     connect: () => {
@@ -246,9 +176,10 @@ module.exports = {
     },
     /**
      * Обновит все счетчики обращений к апи
+     * @param {string} type тип записи - request | error
      * @param expressRequest
      */
-    updateAPICalls: (expressRequest) => {
+    updateAPICalls: (expressRequest, type = "request") => {
         logger.verbose("[STATS][UPD] Update API calls stats " + process.env.NODE_ENV);
 
         assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
@@ -257,13 +188,15 @@ module.exports = {
 
         const {entryPoint, profile} = expressRequest;
 
-        incrementRealtimeCounter(); // все запросы всех пользователей
-        incrementRealtimeCounter(entryPoint); // конкретный тип запроса всех пользователей
-        incrementOperationTotals(entryPoint);
+        const updater = new StatsUpdater(storageService, type, precisionFormats);
+
+        updater.incrementRealtimeCounter();// все запросы всех пользователей
+        updater.incrementRealtimeCounter(entryPoint); // конкретный тип запроса всех пользователей
+        updater.incrementOperationTotals(entryPoint);
         if (profile) {
-            incrementRealtimeCounter(null, profile);  // все запросы пользователя
-            incrementRealtimeCounter(entryPoint, profile); // конкретный тип запроса пользователя
-            incrementOperationTotals(entryPoint, profile);
+            updater.incrementRealtimeCounter(null, profile);  // все запросы пользователя
+            updater.incrementRealtimeCounter(entryPoint, profile); // конкретный тип запроса пользователя
+            updater.incrementOperationTotals(entryPoint, profile);
         }
     },
 
@@ -272,10 +205,12 @@ module.exports = {
      *
      * @param {{name: string, code: string}} provider
      * @param {{profile: string, entryPoint: string, WBtoken: string}} parameters
+     * @param {string} type тип записи - request | error
      */
-    updateProviderAPICalls: (provider, parameters) => {
-        incrementProviderOperationTotals(provider.code, parameters.entryPoint);
-        incrementProviderOperationTotals(provider.code, parameters.entryPoint, parameters.profile);
+    updateProviderAPICalls: (provider, parameters, type = "request") => {
+        const updater = new StatsUpdater(storageService, type, precisionFormats);
+        updater.incrementProviderOperationTotals(provider.code, parameters.entryPoint);
+        updater.incrementProviderOperationTotals(provider.code, parameters.entryPoint, parameters.profile);
     },
 
     /**
