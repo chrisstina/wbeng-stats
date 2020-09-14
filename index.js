@@ -56,7 +56,7 @@ const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
 const getDefaultValueForPrecision = precision =>  moment().format(precisionFormats.get(precision).replace(/:/g, ''));
 
 /**
- * 
+ *
  * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIErrorsRealtime: function((string|null)=, (string|null)=, (string|null)=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
@@ -96,7 +96,7 @@ module.exports = {
      * @param expressRequest
      */
     updateAPICalls: (expressRequest, type = "request") => {
-        logger.verbose("[STATS][UPD] Update API calls stats " + process.env.NODE_ENV);
+        logger.verbose(`[STATS][UPD] Update API ${type} stats, ${process.env.NODE_ENV} env`);
 
         assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
         assert(expressRequest.profile !== undefined, 'Need profile');
