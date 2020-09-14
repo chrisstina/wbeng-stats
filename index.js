@@ -124,6 +124,8 @@ module.exports = {
      * @param {string} type тип записи - request | error
      */
     updateProviderAPICalls: (provider, parameters, type = "request") => {
+        logger.verbose(`[STATS][UPD] Update provider ${type}s stats, ${process.env.NODE_ENV} env`);
+
         const updater = new StatsUpdater(storageService, type, precisionFormats);
         updater.incrementProviderOperationTotals(provider.code, parameters.entryPoint);
         updater.incrementProviderOperationTotals(provider.code, parameters.entryPoint, parameters.profile);
