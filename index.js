@@ -15,7 +15,9 @@ const StatsUpdater = require('./service/StatsUpdater');
 const StatsReader = require('./service/StatsReader');
 const {precisionFormats} = require('./service/precision');
 
-const allowedRequestTypes = ['request', 'error'];
+const REQUEST_TYPE_CALL = 'request';
+const REQUEST_TYPE_ERROR = 'error';
+const allowedRequestTypes = [REQUEST_TYPE_CALL, REQUEST_TYPE_ERROR];
 
 let storageIsReady = false;
 
@@ -279,5 +281,7 @@ module.exports = {
     },
     cleanup: async () => {
         return await cleanupRealtimeCounter();
-    }
+    },
+    REQUEST_TYPE_CALL,
+    REQUEST_TYPE_ERROR
 };
