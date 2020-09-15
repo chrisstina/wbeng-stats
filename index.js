@@ -15,6 +15,8 @@ const StatsUpdater = require('./service/StatsUpdater');
 const StatsReader = require('./service/StatsReader');
 const {precisionFormats} = require('./service/precision');
 
+const allowedRequestTypes = ['request', 'error'];
+
 let storageIsReady = false;
 
 /**
@@ -57,7 +59,7 @@ const getDefaultValueForPrecision = precision =>  moment().format(precisionForma
 
 /**
  *
- * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPICallsRealtime: function((string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIErrorsRealtime: function((string|null)=, (string|null)=, (string|null)=), getAPICallsStats: function(*=, (String|null)=, (String|null)=), getAPIErrorsStats: function(*=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPIRealtime: function(*=, (string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIStats: function(*=, *=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
  */
 module.exports = {
     connect: () => {
@@ -140,7 +142,8 @@ module.exports = {
      * @param offset
      * @return {Promise<{}|null>}
      */
-    getAPICallsRealtime: async (precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+    getAPIRealtime: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+        assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady);
 
         precision = precision || defaultRealtimePrecision;
@@ -150,30 +153,9 @@ module.exports = {
             logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
         }
         logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
-        const reader = new StatsReader(storageService);
+        const reader = new StatsReader(storageService, type);
         return await reader.getRealtimeCounterData(precision, entryPoint, profile, limit, offset);
     },
-    /**
-     *
-     * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
-     * @param {string|null} entryPoint
-     * @param {string|null} profile
-     * @return {Promise<{}|null>}
-     */
-    getAPIErrorsRealtime: async (precision = null, entryPoint = null, profile = null) => {
-        assert(storageIsReady);
-
-        precision = precision || defaultRealtimePrecision;
-
-        if (config.get('stats.realtimePrecisions').indexOf(precision) === -1) {
-            precision = defaultRealtimePrecision;
-            logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
-        }
-        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
-        const reader = new StatsReader(storageService, 'error');
-        return await reader.getRealtimeCounterData(precision, entryPoint, profile);
-    },
-
     /**
      * Вернет статистику по всем запросам за указанный промежуток времени.
      *
@@ -190,7 +172,8 @@ module.exports = {
      *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
      * @return {Promise<{string: string}>}
      */
-    getAPICallsStats: async(profile = null, precision = null, value = null) => {
+    getAPIStats: async(type = 'request', profile = null, precision = null, value = null) => {
+        assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady);
 
         precision = precision || defaultStatsPrecision;
@@ -199,35 +182,7 @@ module.exports = {
 
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
-        const reader = new StatsReader(storageService);
-        return await reader.getStatsData(profile, precision, value);
-    },
-    /**
-     * Вернет статистику по всем ошибкам за указанный промежуток времени.
-     *
-     * Например,
-     * getAPIErrorsStats("default", "week", 34) // данные для профиля default за последнюю неделю
-     * getAPIErrorsStats("default", "day", 19.08.2020) // данные для профиля default за 19 августа 2020
-     * getAPIErrorsStats(null, "month") // все данные за последний месяц
-     * getAPIErrorsStats(null, "month", "Jun.2017") // все данные за июнь 2017 года
-     *
-     * @param profile
-     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
-     * @param {String|null}value конкретный отрезок времени.
-     *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
-     *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
-     * @return {Promise<{string: string}>}
-     */
-    getAPIErrorsStats: async(profile = null, precision = null, value = null) => {
-        assert(storageIsReady);
-
-        precision = precision || defaultStatsPrecision;
-        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
-            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
-
-        value = value || getDefaultValueForPrecision(precision);
-        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
-        const reader = new StatsReader(storageService, 'error');
+        const reader = new StatsReader(storageService, type);
         return await reader.getStatsData(profile, precision, value);
     },
     /**
