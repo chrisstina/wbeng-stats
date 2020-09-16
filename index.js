@@ -61,7 +61,7 @@ const getDefaultValueForPrecision = precision =>  moment().format(precisionForma
 
 /**
  *
- * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPIRealtime: function(*=, (string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIStats: function(*=, *=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function()}}
+ * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPIRealtime: function(*=, (string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIStats: function(String=, *=, (String|null)=, (String|null)=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPIStatsByProfile: function(String=, (String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function(), REQUEST_TYPE_CALL: string, REQUEST_TYPE_ERROR: string}}
  */
 module.exports = {
     connect: () => {
@@ -146,7 +146,7 @@ module.exports = {
      */
     getAPIRealtime: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
-        assert(storageIsReady);
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultRealtimePrecision;
 
@@ -176,7 +176,7 @@ module.exports = {
      */
     getAPIStats: async(type = 'request', profile = null, precision = null, value = null) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
-        assert(storageIsReady);
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
         assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
@@ -199,7 +199,7 @@ module.exports = {
      * @return {Promise<{string: string}>}
      */
     getProviderAPICallsStats: async (provider, profile = null, precision = null, value = null) => {
-        assert(storageIsReady);
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
         assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
@@ -248,10 +248,10 @@ module.exports = {
      * Вернет таблицу данных по всем операциям для указанного профайла и провайдера.
      *
      * Например,
-     * getAPICallsStatsByProfile("week", 34) // данные для профиля default за последнюю неделю
-     * getAPICallsStatsByProfile("day", 19.08.2020) // данные для профиля default за 19 августа 2020
-     * getAPICallsStatsByProfile("month") // все данные за последний месяц
-     * getAPICallsStatsByProfile("month", "201706") // все данные за июнь 2017 года
+     * getAPICallsStatsByProvider("week", 34) // данные для профиля default за последнюю неделю
+     * getAPICallsStatsByProvider("day", 19.08.2020) // данные для профиля default за 19 августа 2020
+     * getAPICallsStatsByProvider("month") // все данные за последний месяц
+     * getAPICallsStatsByProvider("month", "201706") // все данные за июнь 2017 года
      *
      * @param {String} profile
      * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
