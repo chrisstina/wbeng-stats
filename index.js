@@ -136,7 +136,7 @@ module.exports = {
     },
 
     /**
-     *
+     * @param {string} type request | error
      * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
      * @param {string|null} entryPoint
      * @param {string|null} profile
@@ -162,11 +162,13 @@ module.exports = {
      * Вернет статистику по всем запросам за указанный промежуток времени.
      *
      * Например,
-     * getAPICallsStats("default", "week", 34) // данные для профиля default за последнюю неделю
-     * getAPICallsStats("default", "day", 19.08.2020) // данные для профиля default за 19 августа 2020
-     * getAPICallsStats(null, "month") // все данные за последний месяц
-     * getAPICallsStats(null, "month", "Jun.2017") // все данные за июнь 2017 года
+     * getAPIStats("request", "default", "week", 34) // количество всех запросов для профиля default за последнюю неделю
+     * getAPIStats("request","default", "day", 19.08.2020) // количество всех запросов для профиля default за 19 августа 2020
+     * getAPIStats("request", null, "month") // количество всех запросов за последний месяц
+     * getAPIStats("request", null, "month", "Jun.2017") // количество всех запросов за июнь 2017 года
+     * getAPIStats("error", null, "month", "Jun.2017") // количество всех ошибок за июнь 2017 года
      *
+     * @param type request | error
      * @param profile
      * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
      * @param {String|null}value конкретный отрезок времени.
