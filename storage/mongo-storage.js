@@ -102,43 +102,47 @@ class MongoStorage extends Storage {
     async getRealtimeCounterData(hash, limit = null, offset = 0) {
         const database = this.client.db(this.config.dbName);
         const collection = database.collection(COUNTER_COLLECTION);
-        const stats = await collection.findOne({key: hash});
+        const stats = await collection.findOne({key: hash}, { projection: { key: 0, _id: 0 } });
 
         if (stats === null) {
             return {};
         }
-
-        delete stats._id;
-        delete stats.key;
         return stats;
     }
 
     async getOperationTotalsData(hash) {
         const database = this.client.db(this.config.dbName);
         const collection = database.collection(STATS_COLLECTION);
-        const stats = await collection.findOne({key: hash});
+        const stats = await collection.findOne({ key: hash }, { projection: { key: 0, _id: 0 } });
 
         if (stats === null) {
             return {};
         }
-
-        delete stats._id;
-        delete stats.key;
         return stats;
     }
 
     async getProviderOperationTotalsData(provider, hash) {
         const database = this.client.db(this.config.dbName);
         const collection = database.collection(`${PROVIDER_STATS_COLLECTION}${provider}`);
-        const stats = await collection.findOne({key: hash});
+        const stats = await collection.findOne({key: hash}, { projection: { key: 0, _id: 0 } });
 
         if (stats === null) {
             return {};
         }
-
-        delete stats._id;
-        delete stats.key;
         return stats;
+    }
+
+    async getRealtimeKeys() {
+        const database = this.client.db(this.config.dbName);
+        const collection = database.collection(META_COLLECTION);
+        try {
+            const meta = await collection.find({type: STATS_META_TYPE}).toArray();
+            return meta[0].keys;
+        } catch (e) {
+            logger.error('[STATS][STORAGE][MONGO]' + e.stack);
+            return [];
+        }
+
     }
 }
 
