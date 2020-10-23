@@ -120,6 +120,18 @@ module.exports = {
         }
     },
 
+    updateAPIResponseTime: (expressRequest) => {
+        logger.verbose(`[STATS][UPD] Update API response time, ${process.env.NODE_ENV} env`);
+
+        assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
+        assert(storageIsReady);
+
+        const {entryPoint, t1} = expressRequest;
+        const responseDuration = moment().diff(moment(t1), 'miliseconds');
+        const updater = new StatsUpdater(storageService, 'request');
+
+        updater.updateResponseTime(entryPoint, responseDuration);
+    },
     /**
      * Обновит счетчик обращений к АПИ конкретного провайдера
      *

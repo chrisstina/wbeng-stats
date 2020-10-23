@@ -4,6 +4,7 @@ const logger = require('./../logger');
 
 const COUNTER_COLLECTION = 'realtime';
 const STATS_COLLECTION = 'stats';
+const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_STATS_COLLECTION = 'provider_stats_';
 const META_COLLECTION = 'meta';
 const COUNTER_META_TYPE = 'known_realtime_keys';
@@ -31,7 +32,7 @@ class MongoStorage extends Storage {
 
     /**
      *
-     * @param timeSlicedHashes {Map<Number, String>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:allmethods:allprofiles3600
+     * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:allmethods:allprofiles3600
      * @param updateBy
      */
     async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
@@ -40,13 +41,69 @@ class MongoStorage extends Storage {
             const collection = database.collection(COUNTER_COLLECTION);
             const metaCollection = database.collection(META_COLLECTION);
 
-            for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
+            for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
                 let updateDoc = {
                     $inc: {}
                 };
                 updateDoc.$inc[`${timeSlice}`] = updateBy;
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
                 await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
+            }
+        } catch (e) {
+            logger.error('[STATS][STORAGE][MONGO]' + e.stack);
+        }
+    }
+
+    /**
+     *
+     * @param collection
+     * @param query
+     * @param timeSlice
+     * @param responseTime
+     * @return {Promise<number>}
+     */
+    async getAvgForTimeSlice(collection, query, timeSlice, responseTime) {
+        const options = {projection: {}};
+        options.projection[timeSlice] = 1;
+        const responseTimeForTimeSlice = await collection.findOne(query, options);
+
+        let updatedAverageResponseTime = responseTime;
+        if (responseTimeForTimeSlice !== null && responseTimeForTimeSlice[timeSlice]) { //( n * a + v ) / n + 1;
+            const {hits, averageResponseTime} = responseTimeForTimeSlice[timeSlice];
+            return this.updateAverage(hits, averageResponseTime, responseTime);
+        }
+        return updatedAverageResponseTime;
+    }
+
+    /**
+     *
+     * @param currentCount
+     * @param currentAverage
+     * @param updateWithValue
+     * @return {number}
+     */
+    updateAverage(currentCount, currentAverage, updateWithValue) {
+        const n = currentCount + 1; // new count
+        return (n * currentAverage + updateWithValue) / (n + 1);
+    }
+
+    async updateAPIResponseTime(timeSlicedHashes, responseTime) {
+        try {
+            const database = this.client.db("wbeng-stats");
+            const collection = database.collection(RESPONSETIME_COLLECTION);
+            const metaCollection = database.collection(META_COLLECTION);
+
+            console.log(timeSlicedHashes);
+
+            for ( const [ hash, timeSlice ] of timeSlicedHashes.entries() ) {
+                let updateDoc = {$inc: {}, $set: {}};
+                updateDoc['$inc'][`${timeSlice}.hits`] = 1;
+                updateDoc['$set'][`${timeSlice}.averageResponseTime`] = await this.getAvgForTimeSlice(collection, {key: hash}, timeSlice, responseTime);
+
+                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
+                await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
+
+                logger.info('[STATS][STORAGE][MONGO]' + timeSlice + ' ' + hash);
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);

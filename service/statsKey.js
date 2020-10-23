@@ -3,6 +3,7 @@ const ALL_PROFILES_KEY = 'allprofiles';
 const ALL_METHODS_KEY = 'allmethods';
 const API_REQUESTS_KEY = 'apirequests';
 const API_ERRORS_KEY = 'apierrors';
+const RESPONSETIME_KEY = 'responsetime';
 
 module.exports = {
     /**
@@ -20,5 +21,8 @@ module.exports = {
      * @param profile
      * @return {string} например, apirequests:ttservice или apirequests:default
      */
-    generateStatsName: (type, profile = null) => `${type === 'error' ? API_ERRORS_KEY : API_REQUESTS_KEY}:${profile || ALL_PROFILES_KEY}`
+    generateStatsName: (type, profile = null) => `${type === 'error' ? API_ERRORS_KEY : API_REQUESTS_KEY}:${profile || ALL_PROFILES_KEY}`,
+
+    generateResponseTimeName: (entryPoint) => `${RESPONSETIME_KEY}:${entryPoint}`
+
 };
