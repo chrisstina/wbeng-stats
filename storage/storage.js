@@ -3,13 +3,19 @@ class Storage {
 
     /**
      *
-     * @param timeSlicedHashes {Map<Number, String>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
+     * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
      * @param updateBy
      * @return {Promise<void>}
      */
-    async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
+    async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {}
 
-    }
+    /**
+     * Обновляет среднюю длительность запроса операции по временным отрезкам
+     * @param timeSlicedHashes{Map<string, number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например responsetime:flights:30
+     * @param responseTime значение длительности обработки запроса
+     * @return {Promise<void>}
+     */
+    async updateAPIResponseTime(timeSlicedHashes, responseTime) {}
 
     /**
      * Обновляет статистику запросов на операцию по временным отрезкам.
@@ -53,6 +59,12 @@ class Storage {
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
     async getProviderOperationTotalsData(provider, hash) {}
+
+    /**
+     * Вернет названия ключей, ассоциированных с записями реального времени
+     * @return {Promise<[]>}
+     */
+    async getRealtimeKeys() {}
 }
 
 module.exports = Storage;
