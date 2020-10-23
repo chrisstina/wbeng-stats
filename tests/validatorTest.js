@@ -9,7 +9,7 @@ describe('Stats date validator', function () {
         expect(() => { validator.checkers.day(1) }).to.throw();
         expect(() => { validator.checkers.day(0) }).to.throw();
         expect(() => { validator.checkers.day(23) }).to.throw();
-        expect(() => { validator.checkers.day('20200812') }).to.throw();
+        expect(() => { validator.checkers.day('20200812') }).to.not.throw();
         expect(() => { validator.checkers.day('2020-08-12') }).to.not.throw();
     });
 
