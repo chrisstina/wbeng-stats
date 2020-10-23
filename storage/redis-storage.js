@@ -24,7 +24,7 @@ class RedisStorage extends Storage {
 
         const pipe = this.client.multi(); // открываем транзакцию
 
-        for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
+        for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
             pipe.zadd(`knowncounters:`, 0, hash, (err, replies) => {
                 if (err) {
                     logger.error("[STATS][UPD] ZADD got error " + err.toString());
