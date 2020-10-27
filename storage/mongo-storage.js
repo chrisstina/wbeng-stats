@@ -167,6 +167,17 @@ class MongoStorage extends Storage {
         return stats;
     }
 
+    async getResponseTimesData(hash, limit = null, offset = 0) {
+        const database = this.client.db(this.config.dbName);
+        const collection = database.collection(RESPONSETIME_COLLECTION);
+        const stats = await collection.findOne({key: hash}, { projection: { key: 0, _id: 0 } });
+
+        if (stats === null) {
+            return {};
+        }
+        return stats;
+    }
+
     async getOperationTotalsData(hash) {
         const database = this.client.db(this.config.dbName);
         const collection = database.collection(STATS_COLLECTION);

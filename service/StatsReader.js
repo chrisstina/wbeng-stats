@@ -49,6 +49,17 @@ class StatsReader {
     async getRealtimeCounterData(precision, entryPoint = null, profile = null, limit = null, offset = 0) {
         return this._storage.getRealtimeCounterData(`${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
     };
+
+    /**
+     * Получение среднего времени запроса
+     *
+     * @param entryPoint
+     * @param {string} precision название временного отрезка (1 minutes, 30 seconds)
+     * @return {Promise<{string: {}}>} {<timeslice1>: {averageResponseTime: <float>, hits: <number>}, {averageResponseTime: <float>, hits: <number>}}
+     */
+    async getResponseTimesData(entryPoint, precision = '1 minutes') {
+        return this._storage.getResponseTimesData(`${keyModule.generateResponseTimeName(entryPoint)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+    }
 }
 
 module.exports = StatsReader;

@@ -46,6 +46,13 @@ class Storage {
     async getRealtimeCounterData(hash, limit = null, offset = 0) {}
 
     /**
+     * Возвращает среднее время ответа по временным промежуткам
+     * @param {String} hash
+     * @return {Promise<{string: {}}>} {<timeslice1>: {averageResponseTime: <float>, hits: <number>}, {averageResponseTime: <float>, hits: <number>}}
+     */
+    async getResponseTimesData(hash) {}
+
+    /**
      * Возвращает разбивку по количеству операций на указанный промежок времени (ключ)
      * @param hash ключ, например apirequests:default:2020:W35
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
