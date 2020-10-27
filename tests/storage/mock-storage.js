@@ -80,6 +80,24 @@ class MockStorage extends Storage {
         logger.verbose('[STATS][STORAGE][MOCK] getRealtimeKeys');
         return {};
     }
+
+    async getResponseTimesData(hash) {
+        logger.verbose(`[STATS][STORAGE][MOCK] getResponseTimesData for ${hash}`);
+        return {
+            "1597325940": {
+                "averageResponseTime": 3.66,
+                "hits": 3
+            },
+            "1597389360": {
+                "averageResponseTime": 1320.6666666666667,
+                "hits": 5
+            },
+            "1597393500": {
+                "averageResponseTime": 124.66441,
+                "hits": 1
+            }
+        };
+    }
 }
 
 module.exports = MockStorage;

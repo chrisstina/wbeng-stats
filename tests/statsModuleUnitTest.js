@@ -3,6 +3,7 @@ const chai = require('chai'),
     moment = require('moment');
 
 const expect = chai.expect;
+chai.use(require('chai-as-promised'));
 
 const statsModule = require('./../index');
 
@@ -22,6 +23,9 @@ describe('Stats module', () => {
 
     it('should list api stats for profile', async function () {
         const statsRequestsTodayAll = await statsModule.getAPIStats();
+        expect(statsRequestsTodayAll).to.have.property('hash', `apirequests:allprofiles:${moment().format('YYYY')}:${moment().format('MM')}:${moment().format('DD')}`);
+        expect(statsRequestsTodayAll).to.have.property('flights').which.is.finite;
+        expect(statsRequestsTodayAll).to.have.property('price').which.is.finite;
 
         const statsErrorsTodayAll = await statsModule.getAPIStats('error');
         expect(statsErrorsTodayAll).to.have.property('hash', `apierrors:allprofiles:${moment().format('YYYY')}:${moment().format('MM')}:${moment().format('DD')}`);
@@ -79,5 +83,25 @@ describe('Stats module', () => {
     it.skip('should list api stats table for every profile', function (done) {});
 
     it.skip('should list realtime api stats for profile', function (done) {
+    });
+
+    it('should return avg response time per minute for flight operation across all profiles', async function () {
+        const stats = await statsModule.getAPIResponseTime('flights');
+        expect(stats).not.to.be.empty;
+        for (const stat of Object.values(stats)) {
+            expect(stat).to.have.property('averageResponseTime').which.is.finite;
+        }
+    });
+
+    it('should return avg response time per 30 sec for flight operation across all profiles', async function () {
+        const stats = await statsModule.getAPIResponseTime('flights', '30 seconds');
+        expect(stats).not.to.be.empty;
+        for (const stat of Object.values(stats)) {
+            expect(stat).to.have.property('averageResponseTime').which.is.finite;
+        }
+    });
+
+    it('should fail to return avg response time for fake precision', async function () {
+        expect(statsModule.getAPIResponseTime('flights', '1')).to.eventually.throw();
     });
 });
