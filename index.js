@@ -49,6 +49,7 @@ const initStorageService = storageName => {
     }
 };
 
+const defaultResponsetimePrecision = config.get('stats.responseTimePrecisions')[0];
 const defaultRealtimePrecision = config.get('stats.realtimePrecisions')[0];
 const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
 
@@ -218,7 +219,7 @@ module.exports = {
      * @return {Promise<{string: {}}>}
      */
     getAPIResponseTime: async (entryPoint, precision = null, profile = null) => {
-        precision = precision || defaultRealtimePrecision;
+        precision = precision || defaultResponsetimePrecision;
         assert(precision === null || config.get('stats.responseTimePrecisions').indexOf(precision) !== -1,
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.responseTimePrecisions').join(', ')}`);
         logger.verbose(`[STATS][VIEW] Retrieve response times for the ${entryPoint} operation by ${precision} across ${profile || 'all profiles'}`);
