@@ -2,14 +2,14 @@ const {MongoClient} = require("mongodb");
 
 const logger = require('./../logger');
 
-const COUNTER_COLLECTION = 'realtime';
-const STATS_COLLECTION = 'stats';
+const COUNTER_COLLECTION = 'realtime_hits';
+const STATS_COLLECTION = 'aggregate_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
-const PROVIDER_STATS_COLLECTION = 'provider_stats_';
+const PROVIDER_STATS_COLLECTION = 'provider_aggregate_hits_';
 const META_COLLECTION = 'meta';
-const COUNTER_META_TYPE = 'known_realtime_keys';
-const STATS_META_TYPE = 'known_stats_keys';
-const PROVIDER_STATS_META_TYPE = 'known_provider_stats_keys';
+const COUNTER_META_TYPE = 'known_realtime_hits_keys';
+const STATS_META_TYPE = 'known_aggregate_hits_keys';
+const PROVIDER_STATS_META_TYPE = 'known_provider_aggregate_hits_keys';
 
 const HASH_DELIMITER = ':';
 
