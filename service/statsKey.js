@@ -23,6 +23,11 @@ module.exports = {
      */
     generateStatsName: (type, profile = null) => `${type === 'error' ? API_ERRORS_KEY : API_REQUESTS_KEY}:${profile || ALL_PROFILES_KEY}`,
 
+    /**
+     * Имя ключа для средней длительности запросов, например responsetime:void:60
+     * @param entryPoint
+     * @return {string}
+     */
     generateResponseTimeName: (entryPoint) => `${RESPONSETIME_KEY}:${entryPoint}`
 
 };

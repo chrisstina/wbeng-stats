@@ -6,6 +6,7 @@ const COUNTER_COLLECTION = 'realtime_hits';
 const STATS_COLLECTION = 'aggregate_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_STATS_COLLECTION = 'provider_aggregate_hits_';
+const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime_';
 const META_COLLECTION = 'meta';
 const COUNTER_META_TYPE = 'known_realtime_hits_keys';
 const STATS_META_TYPE = 'known_aggregate_hits_keys';
@@ -93,7 +94,26 @@ class MongoStorage extends Storage {
             const collection = database.collection(RESPONSETIME_COLLECTION);
             const metaCollection = database.collection(META_COLLECTION);
 
-            console.log(timeSlicedHashes);
+            for ( const [ hash, timeSlice ] of timeSlicedHashes.entries() ) {
+                let updateDoc = {$inc: {}, $set: {}};
+                updateDoc['$inc'][`${timeSlice}.hits`] = 1;
+                updateDoc['$set'][`${timeSlice}.averageResponseTime`] = await this.getAvgForTimeSlice(collection, {key: hash}, timeSlice, responseTime);
+
+                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
+                await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
+
+                logger.info('[STATS][STORAGE][MONGO]' + timeSlice + ' ' + hash);
+            }
+        } catch (e) {
+            logger.error('[STATS][STORAGE][MONGO]' + e.stack);
+        }
+    }
+
+    async updateProviderResponseTime(timeSlicedHashes, responseTime, provider) {
+        try {
+            const database = this.client.db("wbeng-stats");
+            const collection = database.collection(`${PROVIDER_RESPONSETIME_COLLECTION}${provider}`);
+            const metaCollection = database.collection(META_COLLECTION);
 
             for ( const [ hash, timeSlice ] of timeSlicedHashes.entries() ) {
                 let updateDoc = {$inc: {}, $set: {}};

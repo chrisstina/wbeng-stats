@@ -76,7 +76,14 @@ class StatsUpdater {
         return this._storage.updateRealtimeCounter(timeSlicedHashes);
     }
 
-    updateResponseTime(entryPoint, responseTime) {
+    /**
+     *
+     * @param responseTime
+     * @param entryPoint
+     * @param {string|null} provider
+     * @return {*|Promise<void>}
+     */
+    updateResponseTime(responseTime, entryPoint, provider) {
         const keyName = keyModule.generateResponseTimeName(entryPoint);
         /**
          *
@@ -88,6 +95,27 @@ class StatsUpdater {
             timeSlicedHashes.set(`${keyName}:${precisionInSeconds}`, precisionModule.getTimeSliceStart(precisionInSeconds));
         });
         return this._storage.updateAPIResponseTime(timeSlicedHashes, responseTime);
+    }
+
+    /**
+     *
+     * @param responseTime
+     * @param entryPoint
+     * @param {string|null} provider
+     * @return {*|Promise<void>}
+     */
+    updateProviderResponseTime(responseTime, entryPoint, provider) {
+        const keyName = keyModule.generateResponseTimeName(entryPoint);
+        /**
+         *
+         * @type {Map<String, Number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
+         */
+        const timeSlicedHashes = new Map();
+        statsConfig.get('responseTimePrecisions').forEach(precision => {
+            const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
+            timeSlicedHashes.set(`${keyName}:${precisionInSeconds}`, precisionModule.getTimeSliceStart(precisionInSeconds));
+        });
+        return this._storage.updateProviderResponseTime(timeSlicedHashes, responseTime, provider);
     }
 }
 

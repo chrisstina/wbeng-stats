@@ -61,8 +61,8 @@ const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
 const getDefaultValueForPrecision = precision =>  moment().format(precisionFormats.get(precision).replace(/:/g, ''));
 
 /**
- *
- * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateAPIResponseTime: function(*), updateProviderAPICalls: function({name: string, code: string}, {profile: string, entryPoint: string, WBtoken: string}, string=), getAPIRealtime: function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIStats: function(*=, *=, (String|null)=, (String|null)=), getAPIResponseTime: function(*=, *=, *=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function(), REQUEST_TYPE_CALL: string, REQUEST_TYPE_ERROR: string}}
+ * 
+ * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateAPIResponseTime: function(*), updateProviderAPICalls: function({provider: {name: string, code: string}, profile: string, entryPoint: string, WBtoken: string}, (string|undefined)=), updateProviderResponseTime: function(*), getAPIRealtime: function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIStats: function(*=, *=, (String|null)=, (String|null)=), getAPIResponseTime: function(*=, *=, *=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function(), REQUEST_TYPE_CALL: string, REQUEST_TYPE_ERROR: string}}
  */
 module.exports = {
     connect: () => {
@@ -129,10 +129,11 @@ module.exports = {
         logger.verbose(`[STATS][UPD] Update API response time, ${process.env.NODE_ENV} env`);
 
         assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
+        assert(expressRequest.startedAt !== undefined, 'Need starting timestamp startedAt');
         assert(storageIsReady);
 
-        const {entryPoint, t1} = expressRequest;
-        const responseDuration = moment().diff(moment(t1), 'miliseconds');
+        const {entryPoint, startedAt} = expressRequest;
+        const responseDuration = moment().diff(moment(startedAt), 'miliseconds');
         const updater = new StatsUpdater(storageService, 'request');
 
         updater.updateResponseTime(entryPoint, responseDuration);
@@ -140,18 +141,39 @@ module.exports = {
     /**
      * Обновит счетчик обращений к АПИ конкретного провайдера
      *
-     * @param {{name: string, code: string}} provider
-     * @param {{profile: string, entryPoint: string, WBtoken: string}} parameters
-     * @param {string} type тип записи - request | error
+     * @param {{provider: {name: string, code: string}, profile: string, entryPoint: string, WBtoken: string}} request
+     * @param {string|undefined} type тип записи - request | error
      */
-    updateProviderAPICalls: (provider, parameters, type = "request") => {
+    updateProviderAPICalls: (request, type = "request") => {
         logger.verbose(`[STATS][UPD] Update provider ${type}s stats, ${process.env.NODE_ENV} env`);
+        assert(request.provider !== undefined, 'Need provider');
+        assert(request.entryPoint !== undefined, 'Need entryPoint');
+        assert(request.profile !== undefined, 'Need profile');
+        assert(storageIsReady);
 
+        const {provider, entryPoint, profile} = request;
         const updater = new StatsUpdater(storageService, type, precisionFormats);
-        updater.incrementProviderOperationTotals(provider.code, parameters.entryPoint);
-        updater.incrementProviderOperationTotals(provider.code, parameters.entryPoint, parameters.profile);
+        updater.incrementProviderOperationTotals(provider.code, entryPoint);
+        updater.incrementProviderOperationTotals(provider.code, entryPoint, profile);
     },
+    /**
+     * Обновит среднее время запроса к конкретному провайдеру за текущий промежуток времени (минута \ 30 секунд)
+     * @param request
+     */
+    updateProviderResponseTime: (request) => {
+        logger.verbose(`[STATS][UPD] Update API response time, ${process.env.NODE_ENV} env`);
 
+        assert(request.entryPoint !== undefined, 'Need entryPoint');
+        assert(request.provider !== undefined, 'Need entryPoint');
+        assert(request.startedAt !== undefined, 'Need starting timestamp startedAt');
+        assert(storageIsReady);
+
+        const {entryPoint, provider, startedAt} = request;
+        const responseDuration = moment().diff(moment(startedAt), 'miliseconds');
+        const updater = new StatsUpdater(storageService, 'request');
+
+        updater.updateProviderResponseTime(responseDuration, entryPoint, provider.code);
+    },
     /**
      * @param {string} type request | error
      * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
@@ -318,8 +340,13 @@ module.exports = {
 
         return table;
     },
-    cleanup: async () => {
-        return await cleanupRealtimeCounter();
+    /**
+     *
+     * @return {Promise<*>}
+     */
+    cleanup: () => {
+        cleanupRealtimeCounter();
+        cleanupAggregates();
     },
     REQUEST_TYPE_CALL,
     REQUEST_TYPE_ERROR

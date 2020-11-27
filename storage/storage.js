@@ -18,6 +18,15 @@ class Storage {
     async updateAPIResponseTime(timeSlicedHashes, responseTime) {}
 
     /**
+     * Обновляет среднюю длительность запроса операции конкретного провайдера по временным отрезкам
+     * @param timeSlicedHashes{Map<string, number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например responsetime:flights:30
+     * @param responseTime значение длительности обработки запроса
+     * @param provider код провайдера
+     * @return {Promise<void>}
+     */
+    async updateProviderResponseTime(timeSlicedHashes, responseTime, provider) {}
+
+    /**
      * Обновляет статистику запросов на операцию по временным отрезкам.
      * @param {String} operation название API операции (entryPoint)
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
