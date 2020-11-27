@@ -61,7 +61,7 @@ const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
 const getDefaultValueForPrecision = precision =>  moment().format(precisionFormats.get(precision).replace(/:/g, ''));
 
 /**
- * 
+ *
  * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateAPIResponseTime: function(*), updateProviderAPICalls: function({provider: {name: string, code: string}, profile: string, entryPoint: string, WBtoken: string}, (string|undefined)=), updateProviderResponseTime: function(*), getAPIRealtime: function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIStats: function(*=, *=, (String|null)=, (String|null)=), getAPIResponseTime: function(*=, *=, *=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function(), REQUEST_TYPE_CALL: string, REQUEST_TYPE_ERROR: string}}
  */
 module.exports = {
@@ -136,7 +136,7 @@ module.exports = {
         const responseDuration = moment().diff(moment(startedAt), 'miliseconds');
         const updater = new StatsUpdater(storageService, 'request');
 
-        updater.updateResponseTime(entryPoint, responseDuration);
+        updater.updateResponseTime(responseDuration, entryPoint);
     },
     /**
      * Обновит счетчик обращений к АПИ конкретного провайдера
