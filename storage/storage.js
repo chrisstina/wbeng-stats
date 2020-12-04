@@ -33,7 +33,7 @@ class Storage {
      * @param {Number} updateBy default 1
      * @return {Promise<void>}
      */
-    async updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {}
+    async updateAggregateHits(operation, hashesToUpdate, updateBy = 1) {}
 
     /**
      * Обновляет статистику запросов на операцию конкретного провайдера по временным отрезкам.
@@ -43,7 +43,7 @@ class Storage {
      * @param {Number} updateBy default 1
      * @return {Promise<void>}
      */
-    async updateProviderOperationTotals(provider, operation, hashesToUpdate, updateBy = 1) {}
+    async updateProviderAggregateHits(provider, operation, hashesToUpdate, updateBy = 1) {}
 
     /**
      * Возвращает разбивку событий по временным промежуткам
@@ -66,7 +66,7 @@ class Storage {
      * @param hash ключ, например apirequests:default:2020:W35
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
-    async getOperationTotalsData(hash) {}
+    async getAggregateHits(hash) {}
 
     /**
      * Возвращает разбивку по количеству операций на указанный промежок времени (ключ) для провайдера
@@ -74,13 +74,22 @@ class Storage {
      * @param hash ключ, например apirequests:default:2020:W35
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
-    async getProviderOperationTotalsData(provider, hash) {}
+    async getProviderAggregateHits(provider, hash) {}
 
     /**
      * Вернет названия ключей, ассоциированных с записями реального времени
      * @return {Promise<[]>}
      */
     async getRealtimeKeys() {}
+
+    /**
+     *
+     * @param {Number} timestamp timestamp дата, записи старше которой надо удалить.
+     * @return {Promise<void>}
+     */
+    async safeDeleteAggregateHitsOlderThan(timestamp) {}
+
+    async flushDeleted() {}
 }
 
 module.exports = Storage;

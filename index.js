@@ -13,6 +13,7 @@ const validate = require('./validator');
 
 const StatsUpdater = require('./service/StatsUpdater');
 const StatsReader = require('./service/StatsReader');
+const StatsCleaner = require('./service/StatsCleaner');
 const {precisionFormats} = require('./service/precision');
 
 const REQUEST_TYPE_CALL = 'request';
@@ -51,7 +52,7 @@ const initStorageService = storageName => {
 
 const defaultResponsetimePrecision = config.get('stats.responseTimePrecisions')[0];
 const defaultRealtimePrecision = config.get('stats.realtimePrecisions')[0];
-const defaultStatsPrecision = config.get('stats.statsPrecisions')[0];
+const defaultStatsPrecision = config.get('stats.aggregateHitsPrecisions')[0];
 
 /**
  *
@@ -77,7 +78,7 @@ module.exports = {
      * Список допустимых отрезков времени для получения данных статистики запросов
      * @return {[]}
      */
-    getAllowedStatsPrecisions: () => config.get('stats.statsPrecisions'),
+    getAllowedStatsPrecisions: () => config.get('stats.aggregateHitsPrecisions'),
     /**
      * Список допустимых названий API методов
      * @return {[]}
@@ -220,8 +221,8 @@ module.exports = {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
-        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
-            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+        assert(precision === null || config.get('stats.aggregateHitsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.aggregateHitsPrecisions').join(', ')}`);
 
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
@@ -263,8 +264,8 @@ module.exports = {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
-        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
-            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+        assert(precision === null || config.get('stats.aggregateHitsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.aggregateHitsPrecisions').join(', ')}`);
 
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve ${provider} API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
@@ -290,8 +291,8 @@ module.exports = {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
-        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
-            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+        assert(precision === null || config.get('stats.aggregateHitsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.aggregateHitsPrecisions').join(', ')}`);
 
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, every profile`);
@@ -325,8 +326,8 @@ module.exports = {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
-        assert(precision === null || config.get('stats.statsPrecisions').indexOf(precision) !== -1,
-            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.statsPrecisions').join(', ')}`);
+        assert(precision === null || config.get('stats.aggregateHitsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.aggregateHitsPrecisions').join(', ')}`);
 
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, for profile ${profile}, every provider`);
@@ -345,8 +346,9 @@ module.exports = {
      * @return {Promise<*>}
      */
     cleanup: () => {
-        cleanupRealtimeCounter();
-        cleanupAggregates();
+        const cleaner = new StatsCleaner(storageService);
+        cleaner.flushOldAggregateData();
+        cleaner.flushOldRealtimeData();
     },
     REQUEST_TYPE_CALL,
     REQUEST_TYPE_ERROR

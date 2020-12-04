@@ -101,8 +101,6 @@ class MongoStorage extends Storage {
 
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
                 await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
-
-                logger.info('[STATS][STORAGE][MONGO]' + timeSlice + ' ' + hash);
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
@@ -136,13 +134,14 @@ class MongoStorage extends Storage {
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
      * @param {Number} updateBy default 1
      */
-    async updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {
+    async updateAggregateHits(operation, hashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(STATS_COLLECTION);
             const metaCollection = database.collection(META_COLLECTION);
 
             let updateDoc = {
+                $setOnInsert: { createdAt: Math.floor(Date.now()/1000) },
                 $inc: {}
             };
 
@@ -156,7 +155,7 @@ class MongoStorage extends Storage {
         }
     }
 
-    async updateProviderOperationTotals(provider, operation, hashesToUpdate, updateBy = 1) {
+    async updateProviderAggregateHits(provider, operation, hashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(`${PROVIDER_STATS_COLLECTION}${provider}`);
@@ -198,7 +197,7 @@ class MongoStorage extends Storage {
         return stats;
     }
 
-    async getOperationTotalsData(hash) {
+    async getAggregateHits(hash) {
         const database = this.client.db(this.config.dbName);
         const collection = database.collection(STATS_COLLECTION);
         const stats = await collection.findOne({ key: hash }, { projection: { key: 0, _id: 0 } });
@@ -209,7 +208,7 @@ class MongoStorage extends Storage {
         return stats;
     }
 
-    async getProviderOperationTotalsData(provider, hash) {
+    async getProviderAggregateHits(provider, hash) {
         const database = this.client.db(this.config.dbName);
         const collection = database.collection(`${PROVIDER_STATS_COLLECTION}${provider}`);
         const stats = await collection.findOne({key: hash}, { projection: { key: 0, _id: 0 } });
@@ -220,17 +219,18 @@ class MongoStorage extends Storage {
         return stats;
     }
 
-    async getRealtimeKeys() {
+    async safeDeleteAggregateHitsOlderThan(timestamp) {
         const database = this.client.db(this.config.dbName);
-        const collection = database.collection(META_COLLECTION);
+        const collection = database.collection(STATS_COLLECTION);
         try {
-            const meta = await collection.find({type: STATS_META_TYPE}).toArray();
-            return meta[0].keys;
+            await collection.updateMany(
+                {createdAt: {$lt: timestamp}},
+                {$set: {deleted: true}},
+                {upsert: true}
+            );
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
-            return [];
         }
-
     }
 }
 

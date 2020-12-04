@@ -38,17 +38,17 @@ class MockStorage extends Storage {
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
      * @param {Number} updateBy default 1
      */
-    async updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {
+    async updateAggregateHits(operation, hashesToUpdate, updateBy = 1) {
         try {
-            logger.verbose('[STATS][STORAGE][MOCK] updateOperationTotals');
+            logger.verbose('[STATS][STORAGE][MOCK] updateAggregateHits');
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }
     }
 
-    async updateProviderOperationTotals(provider, operation, hashesToUpdate, updateBy = 1) {
+    async updateProviderAggregateHits(provider, operation, hashesToUpdate, updateBy = 1) {
         try {
-            logger.verbose('[STATS][STORAGE][MOCK] updateProviderOperationTotals');
+            logger.verbose('[STATS][STORAGE][MOCK] updateProviderAggregateHits');
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }
@@ -59,7 +59,7 @@ class MockStorage extends Storage {
         return {};
     }
 
-    async getOperationTotalsData(hash) {
+    async getAggregateHits(hash) {
         logger.verbose(`[STATS][STORAGE][MOCK] getOperationTotalsData for ${hash}`);
         return {
             hash,
@@ -70,8 +70,8 @@ class MockStorage extends Storage {
         };
     }
 
-    async getProviderOperationTotalsData(provider, hash) {
-        logger.verbose('[STATS][STORAGE][MOCK] getProviderOperationTotalsData');
+    async getProviderAggregateHits(provider, hash) {
+        logger.verbose('[STATS][STORAGE][MOCK] getProviderAggregateHits');
 
         return {};
     }

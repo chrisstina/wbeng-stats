@@ -33,11 +33,11 @@ class StatsUpdater {
      */
     incrementOperationTotals(entryPoint = null, profile = null) {
         const keyName = keyModule.generateStatsName(this._type, profile);
-        const hashes = statsConfig.get('statsPrecisions').map(precision => {
+        const hashes = statsConfig.get('aggregateHitsPrecisions').map(precision => {
             const formattedDate = moment().format(precisionModule.precisionFormats.get(precision));
             return `${keyName}:${formattedDate}`;
         });
-        this._storage.updateOperationTotals(entryPoint, hashes);
+        this._storage.updateAggregateHits(entryPoint, hashes);
     }
 
     /**
@@ -48,11 +48,11 @@ class StatsUpdater {
      */
     incrementProviderOperationTotals(providerCode, entryPoint, profile = null) {
         const keyName = keyModule.generateStatsName(this._type, profile);
-        const hashes = statsConfig.get('statsPrecisions').map(precision => {
+        const hashes = statsConfig.get('aggregateHitsPrecisions').map(precision => {
             const formattedDate = moment().format(precisionModule.precisionFormats.get(precision));
             return `${keyName}:${formattedDate}`;
         });
-        this._storage.updateProviderOperationTotals(providerCode, entryPoint, hashes);
+        this._storage.updateProviderAggregateHits(providerCode, entryPoint, hashes);
     };
 
     /**

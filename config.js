@@ -8,12 +8,15 @@ module.exports = {
         "30 seconds",
         "1 minutes",
     ],
-    "statsPrecisions": [ // возможная величина временных отрезков для сбора итоговой статистики по запросам
+    "aggregateHitsPrecisions": [ // возможная величина временных отрезков для сбора итоговой статистики по запросам
         "day",
         "week",
         "month",
         "year",
     ],
+    realtimePrecisionsTTL: "2 days", // сколько храним данные по запросам в реальном времени
+    responseTimePrecisionsTTL: "1 week",  // сколько храним данные по длительности запросов
+    aggregateHitsPrecisionsTTL: "3 months",  // сколько храним данные по итоговой статистике запросами
     "precisionFormats": [
         "Y:MM:DD", // 2020:01:09
         "Y:[W]w", // 2020:W45
