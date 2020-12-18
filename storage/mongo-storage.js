@@ -5,7 +5,7 @@ const logger = require('./../logger');
 const COUNTER_COLLECTION = 'realtime_hits';
 const STATS_COLLECTION = 'aggregate_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
-const PROVIDER_STATS_COLLECTION = 'provider_aggregate_hits_';
+const PROVIDER_STATS_COLLECTION = 'provider_aggregate_hits';
 const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime_';
 const META_COLLECTION = 'meta';
 const COUNTER_META_TYPE = 'known_realtime_hits_keys';
@@ -158,16 +158,17 @@ class MongoStorage extends Storage {
     async updateProviderAggregateHits(provider, operation, hashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
-            const collection = database.collection(`${PROVIDER_STATS_COLLECTION}${provider}`);
+            const collection = database.collection(`${PROVIDER_STATS_COLLECTION}`);
             const metaCollection = database.collection(META_COLLECTION);
 
             let updateDoc = {
+                $setOnInsert: { createdAt: Math.floor(Date.now()/1000) },
                 $inc: {}
             };
             updateDoc.$inc[operation] = updateBy;
 
             for (const hash of hashesToUpdate) {
-                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
+                await collection.updateOne({key: `${provider}${HASH_DELIMITER}${hash}`}, updateDoc, {upsert: true});
                 await metaCollection.updateOne({type: PROVIDER_STATS_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
