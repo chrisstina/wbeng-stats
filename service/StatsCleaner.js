@@ -18,6 +18,7 @@ class StatsCleaner {
     flushOldAggregateData() {
         const timestamp = moment().subtract(...statsConfig.aggregateHitsPrecisionsTTL.split(' ')).unix();
         this._storage.safeDeleteAggregateHitsOlderThan(timestamp);
+        this._storage.safeDeleteProviderAggregateHitsOlderThan(timestamp);
     }
 
     flushOldRealtimeData() {

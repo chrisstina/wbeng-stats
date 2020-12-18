@@ -83,11 +83,18 @@ class Storage {
     async getRealtimeKeys() {}
 
     /**
-     *
+     * Удаляет записи об общем количестве вызовов
      * @param {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @return {Promise<void>}
      */
     async safeDeleteAggregateHitsOlderThan(timestamp) {}
+
+    /**
+     * Удаляет записи о количестве вызовов провайдеров
+     * @param {Number} timestamp timestamp дата, записи старше которой надо удалить.
+     * @returns {Promise<void>}
+     */
+    async safeDeleteProviderAggregateHitsOlderThan(timestamp) {}
 
     async flushDeleted() {}
 }
