@@ -16,6 +16,24 @@ const HASH_DELIMITER = ':';
 
 const Storage = require('./storage');
 
+/**
+ *
+ * @param filterConditions
+ * @constructor
+ */
+function SearchFilter(filterConditions) {
+    const excludeDeleted = {deleted: {$ne: true}}
+
+    this.filter = {...filterConditions, ...excludeDeleted};
+
+    this.withDeleted = function () {
+        delete this.filter.deleted;
+        return this;
+    }
+
+    return this.filter;
+}
+
 class MongoStorage extends Storage {
 
     constructor(config) {
@@ -30,6 +48,8 @@ class MongoStorage extends Storage {
         });
         await this.client.connect();
     }
+
+    // ============= Обновление =============
 
     /**
      *
@@ -94,7 +114,7 @@ class MongoStorage extends Storage {
             const collection = database.collection(RESPONSETIME_COLLECTION);
             const metaCollection = database.collection(META_COLLECTION);
 
-            for ( const [ hash, timeSlice ] of timeSlicedHashes.entries() ) {
+            for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
                 let updateDoc = {$inc: {}, $set: {}};
                 updateDoc['$inc'][`${timeSlice}.hits`] = 1;
                 updateDoc['$set'][`${timeSlice}.averageResponseTime`] = await this.getAvgForTimeSlice(collection, {key: hash}, timeSlice, responseTime);
@@ -113,7 +133,7 @@ class MongoStorage extends Storage {
             const collection = database.collection(`${PROVIDER_RESPONSETIME_COLLECTION}${provider}`);
             const metaCollection = database.collection(META_COLLECTION);
 
-            for ( const [ hash, timeSlice ] of timeSlicedHashes.entries() ) {
+            for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
                 let updateDoc = {$inc: {}, $set: {}};
                 updateDoc['$inc'][`${timeSlice}.hits`] = 1;
                 updateDoc['$set'][`${timeSlice}.averageResponseTime`] = await this.getAvgForTimeSlice(collection, {key: hash}, timeSlice, responseTime);
@@ -141,7 +161,7 @@ class MongoStorage extends Storage {
             const metaCollection = database.collection(META_COLLECTION);
 
             let updateDoc = {
-                $setOnInsert: { createdAt: Math.floor(Date.now()/1000) },
+                $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
                 $inc: {}
             };
 
@@ -162,7 +182,7 @@ class MongoStorage extends Storage {
             const metaCollection = database.collection(META_COLLECTION);
 
             let updateDoc = {
-                $setOnInsert: { createdAt: Math.floor(Date.now()/1000) },
+                $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
                 $inc: {}
             };
             updateDoc.$inc[operation] = updateBy;
@@ -176,10 +196,15 @@ class MongoStorage extends Storage {
         }
     }
 
+    // ============= Получение =============
+
     async getRealtimeCounterData(hash, limit = null, offset = 0) {
-        const database = this.client.db(this.config.dbName);
-        const collection = database.collection(COUNTER_COLLECTION);
-        const stats = await collection.findOne({key: hash}, { projection: { key: 0, _id: 0 } });
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(COUNTER_COLLECTION)
+            .findOne(
+                new SearchFilter({key: hash}),
+                {projection: {key: 0, _id: 0}});
 
         if (stats === null) {
             return {};
@@ -188,44 +213,63 @@ class MongoStorage extends Storage {
     }
 
     async getResponseTimesData(hash, limit = null, offset = 0) {
-        const database = this.client.db(this.config.dbName);
-        const collection = database.collection(RESPONSETIME_COLLECTION);
-        const stats = await collection.findOne({key: hash}, { projection: { key: 0, _id: 0 } });
-
-        if (stats === null) {
-            return {};
-        }
-        return stats;
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(RESPONSETIME_COLLECTION)
+            .findOne(
+                new SearchFilter({key: hash}),
+                {projection: {key: 0, _id: 0}});
+        return (stats === null)
+            ? null
+            : stats;
     }
 
     async getAggregateHits(hash) {
-        const database = this.client.db(this.config.dbName);
-        const collection = database.collection(STATS_COLLECTION);
-        const stats = await collection.findOne({ key: hash }, { projection: { key: 0, _id: 0 } });
-
-        if (stats === null) {
-            return {};
-        }
-        return stats;
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(STATS_COLLECTION)
+            .findOne(
+                new SearchFilter({key: hash}),
+                {projection: {key: 0, _id: 0}});
+        return (stats === null)
+            ? null
+            : stats;
     }
 
     async getProviderAggregateHits(provider, hash) {
-        const database = this.client.db(this.config.dbName);
-        const collection = database.collection(`${PROVIDER_STATS_COLLECTION}${provider}`);
-        const stats = await collection.findOne({key: hash}, { projection: { key: 0, _id: 0 } });
-
-        if (stats === null) {
-            return {};
-        }
-        return stats;
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(PROVIDER_STATS_COLLECTION)
+            .findOne(
+                new SearchFilter({key: hash}),
+                {projection: {key: 0, _id: 0}});
+        return (stats === null)
+            ? null
+            : stats;
     }
 
+    // ============= Удаление =============
+
     async safeDeleteAggregateHitsOlderThan(timestamp) {
+        await this.safeDelete(STATS_COLLECTION, {createdAt: {$lt: timestamp}});
+    }
+
+    async safeDeleteProviderAggregateHitsOlderThan(timestamp) {
+        await this.safeDelete(PROVIDER_STATS_COLLECTION, {createdAt: {$lt: timestamp}});
+    }
+
+    /**
+     *
+     * @param {string} collectionName
+     * @param {{}} filter mongo filter
+     * @returns {Promise<void>}
+     */
+    async safeDelete(collectionName, filter) {
         const database = this.client.db(this.config.dbName);
-        const collection = database.collection(STATS_COLLECTION);
+        const collection = database.collection(collectionName);
         try {
             await collection.updateMany(
-                {createdAt: {$lt: timestamp}},
+                new SearchFilter(filter),
                 {$set: {deleted: true}},
                 {upsert: true}
             );
