@@ -63,7 +63,7 @@ const getDefaultValueForPrecision = precision =>  moment().format(precisionForma
 
 /**
  *
- * @type {{connect: function(), getAllowedRealtimePrecisions: function(): value, getAllowedStatsPrecisions: function(): value, getAllowedOperations: function(): value, getAllowedProfiles: function(): value, validateStatsDate: function(*, *=), updateAPICalls: function(*, string=), updateAPIResponseTime: function(*), updateProviderAPICalls: function({provider: {name: string, code: string}, profile: string, entryPoint: string, WBtoken: string}, (string|undefined)=), updateProviderResponseTime: function(*), getAPIRealtime: function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=), getAPIStats: function(*=, *=, (String|null)=, (String|null)=), getAPIResponseTime: function(*=, *=, *=), getProviderAPICallsStats: function(String, (String|null)=, (String|null)=, (String|null)=), getAPICallsStatsByProfile: function((String|null)=, (String|null)=), getAPICallsStatsByProvider: function(String, (String|null)=, (String|null)=), cleanup: function(), REQUEST_TYPE_CALL: string, REQUEST_TYPE_ERROR: string}}
+ * @type {{getAllowedOperations: (function(): *), getAPIStats: (function(*=, *=, (String|null)=, (String|null)=): {string: string}), getAllowedRealtimePrecisions: (function(): *), updateProviderAPICalls: module.exports.updateProviderAPICalls, updateProviderResponseTime: module.exports.updateProviderResponseTime, getProviderAPICallsStats: (function(String, (String|null)=, (String|null)=, (String|null)=): {string: string}), REQUEST_TYPE_CALL: string, updateAPICalls: module.exports.updateAPICalls, getAPICallsStatsByProvider: (function(String, (String|null)=, (String|null)=): {}), cleanup: (function(): Promise<*>), getAPIRealtime: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}), getAPIResponseTime: (function(*=, *=, *=): {string: {}}), getAllowedStatsPrecisions: (function(): *), getAllowedProfiles: (function(): *), validateStatsDate: module.exports.validateStatsDate, updateAPIResponseTime: module.exports.updateAPIResponseTime, getAPICallsStatsByProfile: (function((String|null)=, (String|null)=): {}), REQUEST_TYPE_ERROR: string, connect: (function(): Promise<void>)}}
  */
 module.exports = {
     connect: () => {
@@ -99,7 +99,7 @@ module.exports = {
     /**
      * Обновит все счетчики обращений к апи
      * @param {string} type тип записи - request | error
-     * @param expressRequest
+     * @param {{entryPoint: string, profile: string}} expressRequest
      */
     updateAPICalls: (expressRequest, type = "request") => {
         logger.verbose(`[STATS][UPD] Update API ${type} stats, ${process.env.NODE_ENV} env`);
@@ -349,6 +349,7 @@ module.exports = {
         const cleaner = new StatsCleaner(storageService);
         cleaner.flushOldAggregateData();
         cleaner.flushOldRealtimeData();
+        logger.verbose(`[STATS][CLEANER] Cleaning has been executed`);
     },
     REQUEST_TYPE_CALL,
     REQUEST_TYPE_ERROR

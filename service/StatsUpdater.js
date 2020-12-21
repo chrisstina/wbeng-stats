@@ -87,7 +87,7 @@ class StatsUpdater {
         const keyName = keyModule.generateResponseTimeName(entryPoint);
         /**
          *
-         * @type {Map<String, Number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
+         * @type {Map<String, Number>} где ключ  - название ключа, например 3600:flights:apirequests:all, а значение - timestamp начала отрезка времени (начало текущего часа, минуты, и т.п)
          */
         const timeSlicedHashes = new Map();
         statsConfig.get('responseTimePrecisions').forEach(precision => {
