@@ -1,8 +1,6 @@
 const config = require('config'),
     moment = require('moment');
 
-const keyModule = require('./statsKey');
-
 const statsConfig = config.get('stats');
 
 class StatsCleaner {
@@ -22,7 +20,8 @@ class StatsCleaner {
     }
 
     flushOldRealtimeData() {
-
+        const timestamp = moment().subtract(moment.duration(...statsConfig.realtimePrecisionsTTL.split(' '))).unix();
+        this._storage.safeDeleteRealtimeCounterDataOlderThan(timestamp);
     }
 }
 

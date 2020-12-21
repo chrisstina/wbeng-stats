@@ -1,4 +1,5 @@
 const {MongoClient} = require("mongodb");
+const moment = require('moment');
 
 const logger = require('./../logger');
 
@@ -257,6 +258,35 @@ class MongoStorage extends Storage {
     async safeDeleteProviderAggregateHitsOlderThan(timestamp) {
         await this.safeDelete(PROVIDER_STATS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
+
+    async safeDeleteRealtimeCounterDataOlderThan(timestamp) {
+        const timeLimit = moment.unix(timestamp),
+            timeSlicesToDelete = {};
+
+        // получим все ключи
+        const allCounters = await this.client
+            .db(this.config.dbName)
+            .collection(COUNTER_COLLECTION)
+            .find({}, {projection: {key: 0, _id: 0}});
+
+        for (const record of await allCounters.toArray()) {
+            for (const [key, v] of Object.entries(record)) {
+                const timeSlice = isNaN(key) ? moment() : moment.unix(key);
+                if (timeSlice.isBefore(timeLimit)) {
+                    timeSlicesToDelete[key] = "";
+                }
+            }
+        }
+
+        if (Object.entries(timeSlicesToDelete).length > 0) {
+            await this.client
+                .db(this.config.dbName)
+                .collection(COUNTER_COLLECTION)
+                .updateMany({},
+                    {$unset: timeSlicesToDelete}
+                );
+        }
+    };
 
     /**
      *
