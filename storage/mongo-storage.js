@@ -7,7 +7,7 @@ const COUNTER_COLLECTION = 'realtime_hits';
 const STATS_COLLECTION = 'aggregate_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_STATS_COLLECTION = 'provider_aggregate_hits';
-const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime_';
+const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime';
 const META_COLLECTION = 'meta';
 const COUNTER_META_TYPE = 'known_realtime_hits_keys';
 const STATS_META_TYPE = 'known_aggregate_hits_keys';
@@ -128,10 +128,10 @@ class MongoStorage extends Storage {
         }
     }
 
-    async updateProviderResponseTime(timeSlicedHashes, responseTime, provider) {
+    async updateProviderResponseTime(timeSlicedHashes, responseTime) {
         try {
             const database = this.client.db("wbeng-stats");
-            const collection = database.collection(`${PROVIDER_RESPONSETIME_COLLECTION}${provider}`);
+            const collection = database.collection(`${PROVIDER_RESPONSETIME_COLLECTION}`);
             const metaCollection = database.collection(META_COLLECTION);
 
             for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
@@ -242,7 +242,7 @@ class MongoStorage extends Storage {
             .db(this.config.dbName)
             .collection(PROVIDER_STATS_COLLECTION)
             .findOne(
-                new SearchFilter({key: hash}),
+                new SearchFilter({key: `${provider}${HASH_DELIMITER}${hash}`}),
                 {projection: {key: 0, _id: 0}});
         return (stats === null)
             ? null
