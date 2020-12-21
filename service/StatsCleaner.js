@@ -21,7 +21,12 @@ class StatsCleaner {
 
     flushOldRealtimeData() {
         const timestamp = moment().subtract(moment.duration(...statsConfig.realtimePrecisionsTTL.split(' '))).unix();
-        this._storage.safeDeleteRealtimeCounterDataOlderThan(timestamp);
+        this._storage.deleteRealtimeCounterDataOlderThan(timestamp);
+    }
+
+    flushOldResponsetimeData() {
+        const timestamp = moment().subtract(moment.duration(...statsConfig.responseTimePrecisionsTTL.split(' '))).unix();
+        this._storage.deleteResponsetimeDataOlderThan(timestamp);
     }
 }
 

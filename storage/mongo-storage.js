@@ -259,33 +259,12 @@ class MongoStorage extends Storage {
         await this.safeDelete(PROVIDER_STATS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
 
-    async safeDeleteRealtimeCounterDataOlderThan(timestamp) {
-        const timeLimit = moment.unix(timestamp),
-            timeSlicesToDelete = {};
+    async deleteRealtimeCounterDataOlderThan(timestamp) {
+        await this.deleteTimestampedDataOlderThan(COUNTER_COLLECTION, timestamp);
+    };
 
-        // получим все ключи
-        const allCounters = await this.client
-            .db(this.config.dbName)
-            .collection(COUNTER_COLLECTION)
-            .find({}, {projection: {key: 0, _id: 0}});
-
-        for (const record of await allCounters.toArray()) {
-            for (const [key, v] of Object.entries(record)) {
-                const timeSlice = isNaN(key) ? moment() : moment.unix(key);
-                if (timeSlice.isBefore(timeLimit)) {
-                    timeSlicesToDelete[key] = "";
-                }
-            }
-        }
-
-        if (Object.entries(timeSlicesToDelete).length > 0) {
-            await this.client
-                .db(this.config.dbName)
-                .collection(COUNTER_COLLECTION)
-                .updateMany({},
-                    {$unset: timeSlicesToDelete}
-                );
-        }
+    async deleteResponsetimeDataOlderThan(timestamp) {
+        await this.deleteTimestampedDataOlderThan(RESPONSETIME_COLLECTION, timestamp);
     };
 
     /**
@@ -305,6 +284,46 @@ class MongoStorage extends Storage {
             );
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
+        }
+    }
+
+    /**
+     * Для документов, имеющих структуру {timesamp: hits} удаляет все записи, где timestamp меньше указанного
+     * @param collectionName
+     * @param timestamp
+     * @returns {Promise<void>}
+     */
+    async deleteTimestampedDataOlderThan(collectionName, timestamp) {
+        const timeLimit = moment.unix(timestamp),
+            timeSlicesToDelete = {};
+
+        // получим все ключи для каждого документа коллекции
+        const allCounters = await this.client
+            .db(this.config.dbName)
+            .collection(collectionName)
+            .find({}, {projection: {key: 0, _id: 0}});
+
+        // отсортируем старые записи для каждого документа коллекции
+        for (const record of await allCounters.toArray()) {
+            for (const [key, v] of Object.entries(record)) {
+                const timeSlice = isNaN(key) ? moment() : moment.unix(key);
+                if (timeSlice.isBefore(timeLimit)) {
+                    timeSlicesToDelete[key] = "";
+                }
+            }
+        }
+
+        // удалим старые записи для каждого документа коллекции
+        const count = Object.entries(timeSlicesToDelete).length;
+        if (count > 0) {
+            logger.info(`[STATS][STORAGE][MONGO] Removing ${count} old records`);
+            await this.client
+                .db(this.config.dbName)
+                .collection(collectionName)
+                .updateMany({},
+                    {$unset: timeSlicesToDelete}
+                );
+            logger.info(`[STATS][STORAGE][MONGO] ${count} old records have been deleted from ${collectionName}`);
         }
     }
 }

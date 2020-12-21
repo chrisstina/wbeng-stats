@@ -349,6 +349,7 @@ module.exports = {
         const cleaner = new StatsCleaner(storageService);
         cleaner.flushOldAggregateData();
         cleaner.flushOldRealtimeData();
+        cleaner.flushOldResponsetimeData();
         logger.verbose(`[STATS][CLEANER] Cleaning has been executed`);
     },
     REQUEST_TYPE_CALL,

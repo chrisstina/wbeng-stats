@@ -101,7 +101,14 @@ class Storage {
      * @param  {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @returns {Promise<void>}
      */
-    async safeDeleteRealtimeCounterDataOlderThan(timestamp) {};
+    async deleteRealtimeCounterDataOlderThan(timestamp) {};
+
+    /**
+     *
+     * @param  {Number} timestamp timestamp дата, записи старше которой надо удалить.
+     * @returns {Promise<void>}
+     */
+    async deleteResponsetimeDataOlderThan(timestamp) {};
 
     async flushDeleted() {}
 }
