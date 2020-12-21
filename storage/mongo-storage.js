@@ -225,6 +225,18 @@ class MongoStorage extends Storage {
             : stats;
     }
 
+    async getProviderResponseTimesData(provider, hash) {
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(PROVIDER_RESPONSETIME_COLLECTION)
+            .findOne(
+                new SearchFilter({key: `${provider}${HASH_DELIMITER}${hash}`}),
+                {projection: {key: 0, _id: 0}});
+        return (stats === null)
+            ? null
+            : stats;
+    }
+
     async getAggregateHits(hash) {
         const stats = await this.client
             .db(this.config.dbName)

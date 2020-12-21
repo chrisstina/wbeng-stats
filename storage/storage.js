@@ -61,19 +61,27 @@ class Storage {
     async getResponseTimesData(hash) {}
 
     /**
-     * Возвращает разбивку по количеству операций на указанный промежок времени (ключ)
+     * Возвращает разбивку по количеству операций на указанный промежуток времени (ключ)
      * @param hash ключ, например apirequests:default:2020:W35
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
     async getAggregateHits(hash) {}
 
     /**
-     * Возвращает разбивку по количеству операций на указанный промежок времени (ключ) для провайдера
+     * Возвращает разбивку по количеству операций на указанный промежуток времени (ключ) для провайдера
      * @param provider код провайдера
      * @param hash ключ, например apirequests:default:2020:W35
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
     async getProviderAggregateHits(provider, hash) {}
+
+    /**
+     * Возвращает среднее время ответа по временным промежуткам для провайдера
+     * @param provider код провайдера
+     * @param hash
+     * @returns {Promise<void>}
+     */
+    async getProviderResponseTimesData(provider, hash) {}
 
     /**
      * Вернет названия ключей, ассоциированных с записями реального времени

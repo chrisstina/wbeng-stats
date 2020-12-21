@@ -51,6 +51,20 @@ class StatsReader {
     };
 
     /**
+     * Получение данных статистики реального времени
+     *
+     * @param {String} precision название временного отрезка (1 minutes, 3 months, etc)
+     * @param {String|null} entryPoint
+     * @param {String|null} profile
+     * @param {Number|null} limit
+     * @param {Number} offset
+     * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
+     */
+    async getProviderRealtimeCounterData(provider, precision, entryPoint = null, profile = null, limit = null, offset = 0) {
+        return this._storage.getProviderRealtimeCounterData(provider, `${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+    };
+
+    /**
      * Получение среднего времени запроса
      *
      * @param entryPoint
