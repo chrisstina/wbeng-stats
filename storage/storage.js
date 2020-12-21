@@ -104,11 +104,18 @@ class Storage {
     async deleteRealtimeCounterDataOlderThan(timestamp) {};
 
     /**
-     *
+     * Удаляет старые записи о длительности выполнения запросов
      * @param  {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @returns {Promise<void>}
      */
     async deleteResponsetimeDataOlderThan(timestamp) {};
+
+    /**
+     * Удаляет старые записи о длительности выполнения запросов провайдеров
+     * @param timestamp
+     * @returns {Promise<void>}
+     */
+    async deleteProviderResponsetimeDataOlderThan(timestamp) {};
 
     async flushDeleted() {}
 }

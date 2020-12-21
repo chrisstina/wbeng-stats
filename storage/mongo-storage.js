@@ -267,6 +267,10 @@ class MongoStorage extends Storage {
         await this.deleteTimestampedDataOlderThan(RESPONSETIME_COLLECTION, timestamp);
     };
 
+    async deleteProviderResponsetimeDataOlderThan(timestamp) {
+        await this.deleteTimestampedDataOlderThan(PROVIDER_RESPONSETIME_COLLECTION, timestamp);
+    };
+
     /**
      *
      * @param {string} collectionName

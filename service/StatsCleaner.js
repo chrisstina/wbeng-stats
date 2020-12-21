@@ -27,6 +27,7 @@ class StatsCleaner {
     flushOldResponsetimeData() {
         const timestamp = moment().subtract(moment.duration(...statsConfig.responseTimePrecisionsTTL.split(' '))).unix();
         this._storage.deleteResponsetimeDataOlderThan(timestamp);
+        this._storage.deleteProviderResponsetimeDataOlderThan(timestamp);
     }
 }
 
