@@ -159,13 +159,13 @@ module.exports = {
     },
     /**
      * Обновит среднее время запроса к конкретному провайдеру за текущий промежуток времени (минута \ 30 секунд)
-     * @param request
+     * @param {{entryPoint: string, provider: {code: string}, startedAt: Number}} request
      */
     updateProviderResponseTime: (request) => {
         logger.verbose(`[STATS][UPD] Update API response time, ${process.env.NODE_ENV} env`);
 
         assert(request.entryPoint !== undefined, 'Need entryPoint');
-        assert(request.provider !== undefined, 'Need entryPoint');
+        assert(request.provider !== undefined, 'Need provider');
         assert(request.startedAt !== undefined, 'Need starting timestamp startedAt');
         assert(storageIsReady);
 
