@@ -62,7 +62,7 @@ class MongoStorage extends Storage {
             const collection = database.collection(COUNTER_COLLECTION);
             const metaCollection = database.collection(META_COLLECTION);
 
-            for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
+            for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
                 let updateDoc = {
                     $inc: {}
                 };
