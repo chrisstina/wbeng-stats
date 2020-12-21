@@ -8,10 +8,6 @@ const STATS_COLLECTION = 'aggregate_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_STATS_COLLECTION = 'provider_aggregate_hits';
 const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime';
-const META_COLLECTION = 'meta';
-const COUNTER_META_TYPE = 'known_realtime_hits_keys';
-const STATS_META_TYPE = 'known_aggregate_hits_keys';
-const PROVIDER_STATS_META_TYPE = 'known_provider_aggregate_hits_keys';
 
 const HASH_DELIMITER = ':';
 
@@ -61,7 +57,6 @@ class MongoStorage extends Storage {
         try {
             const database = this.client.db("wbeng-stats");
             const collection = database.collection(COUNTER_COLLECTION);
-            const metaCollection = database.collection(META_COLLECTION);
 
             for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
                 let updateDoc = {
@@ -69,7 +64,6 @@ class MongoStorage extends Storage {
                 };
                 updateDoc.$inc[`${timeSlice}`] = updateBy;
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
-                await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
@@ -113,7 +107,6 @@ class MongoStorage extends Storage {
         try {
             const database = this.client.db("wbeng-stats");
             const collection = database.collection(RESPONSETIME_COLLECTION);
-            const metaCollection = database.collection(META_COLLECTION);
 
             for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
                 let updateDoc = {$inc: {}, $set: {}};
@@ -121,7 +114,6 @@ class MongoStorage extends Storage {
                 updateDoc['$set'][`${timeSlice}.averageResponseTime`] = await this.getAvgForTimeSlice(collection, {key: hash}, timeSlice, responseTime);
 
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
-                await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
@@ -132,7 +124,6 @@ class MongoStorage extends Storage {
         try {
             const database = this.client.db("wbeng-stats");
             const collection = database.collection(`${PROVIDER_RESPONSETIME_COLLECTION}`);
-            const metaCollection = database.collection(META_COLLECTION);
 
             for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
                 let updateDoc = {$inc: {}, $set: {}};
@@ -140,7 +131,6 @@ class MongoStorage extends Storage {
                 updateDoc['$set'][`${timeSlice}.averageResponseTime`] = await this.getAvgForTimeSlice(collection, {key: hash}, timeSlice, responseTime);
 
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
-                await metaCollection.updateOne({type: COUNTER_META_TYPE}, {$addToSet: {keys: hash}});
 
                 logger.info('[STATS][STORAGE][MONGO]' + timeSlice + ' ' + hash);
             }
@@ -159,7 +149,6 @@ class MongoStorage extends Storage {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(STATS_COLLECTION);
-            const metaCollection = database.collection(META_COLLECTION);
 
             let updateDoc = {
                 $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
@@ -169,7 +158,6 @@ class MongoStorage extends Storage {
             for (const hash of hashesToUpdate) {
                 updateDoc.$inc[operation] = updateBy;
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
-                await metaCollection.updateOne({type: STATS_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
@@ -180,7 +168,6 @@ class MongoStorage extends Storage {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(`${PROVIDER_STATS_COLLECTION}`);
-            const metaCollection = database.collection(META_COLLECTION);
 
             let updateDoc = {
                 $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
@@ -190,7 +177,6 @@ class MongoStorage extends Storage {
 
             for (const hash of hashesToUpdate) {
                 await collection.updateOne({key: `${provider}${HASH_DELIMITER}${hash}`}, updateDoc, {upsert: true});
-                await metaCollection.updateOne({type: PROVIDER_STATS_META_TYPE}, {$addToSet: {keys: hash}});
             }
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
