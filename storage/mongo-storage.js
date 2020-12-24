@@ -31,6 +31,12 @@ function SearchFilter(filterConditions) {
     return this.filter;
 }
 
+/**
+ *
+ * @type {{createdAt: number, _id: number, key: number}}
+ */
+const defaultProjection = {key: 0, _id: 0, createdAt: 0};
+
 class MongoStorage extends Storage {
 
     constructor(config) {
@@ -191,7 +197,7 @@ class MongoStorage extends Storage {
             .collection(COUNTER_COLLECTION)
             .findOne(
                 new SearchFilter({key: hash}),
-                {projection: {key: 0, _id: 0}});
+                {projection: defaultProjection});
 
         if (stats === null) {
             return {};
@@ -205,7 +211,7 @@ class MongoStorage extends Storage {
             .collection(RESPONSETIME_COLLECTION)
             .findOne(
                 new SearchFilter({key: hash}),
-                {projection: {key: 0, _id: 0}});
+                {projection: defaultProjection});
         return (stats === null)
             ? null
             : stats;
@@ -217,7 +223,7 @@ class MongoStorage extends Storage {
             .collection(PROVIDER_RESPONSETIME_COLLECTION)
             .findOne(
                 new SearchFilter({key: `${provider}${HASH_DELIMITER}${hash}`}),
-                {projection: {key: 0, _id: 0}});
+                {projection: defaultProjection});
         return (stats === null)
             ? null
             : stats;
@@ -229,7 +235,7 @@ class MongoStorage extends Storage {
             .collection(STATS_COLLECTION)
             .findOne(
                 new SearchFilter({key: hash}),
-                {projection: {key: 0, _id: 0}});
+                {projection: defaultProjection});
         return (stats === null)
             ? null
             : stats;
@@ -241,7 +247,7 @@ class MongoStorage extends Storage {
             .collection(PROVIDER_STATS_COLLECTION)
             .findOne(
                 new SearchFilter({key: `${provider}${HASH_DELIMITER}${hash}`}),
-                {projection: {key: 0, _id: 0}});
+                {projection: defaultProjection});
         return (stats === null)
             ? null
             : stats;
