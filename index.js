@@ -63,7 +63,7 @@ const getDefaultValueForPrecision = precision =>  moment().format(precisionForma
 
 /**
  *
- * @type {{getAllowedOperations: (function(): *), getAPIStats: (function(*=, *=, (String|null)=, (String|null)=): {string: string}), getAllowedRealtimePrecisions: (function(): *), updateProviderAPICalls: module.exports.updateProviderAPICalls, updateProviderResponseTime: module.exports.updateProviderResponseTime, getProviderAPICallsStats: (function(String, (String|null)=, (String|null)=, (String|null)=): {string: string}), REQUEST_TYPE_CALL: string, updateAPICalls: module.exports.updateAPICalls, getAPICallsStatsByProvider: (function(String, (String|null)=, (String|null)=): {}), cleanup: (function(): Promise<*>), getAPIRealtime: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}), getAPIResponseTime: (function(*=, *=, *=): {string: {}}), getAllowedStatsPrecisions: (function(): *), getAllowedProfiles: (function(): *), validateStatsDate: module.exports.validateStatsDate, updateAPIResponseTime: module.exports.updateAPIResponseTime, getAPICallsStatsByProfile: (function((String|null)=, (String|null)=): {}), REQUEST_TYPE_ERROR: string, connect: (function(): Promise<void>)}}
+ * @type {{getAllowedOperations: (function(): *), getAPIStats: (function(*=, *=, (String|null)=, (String|null)=): {string: string}), getAllowedRealtimePrecisions: (function(): *), updateProviderAPICalls: module.exports.updateProviderAPICalls, updateProviderResponseTime: module.exports.updateProviderResponseTime, getProviderAPICallsStats: (function(String, (String|null)=, (String|null)=, (String|null)=): {string: string}), REQUEST_TYPE_CALL: string, updateAPICalls: module.exports.updateAPICalls, getAPICallsStatsByProvider: (function(String, (String|null)=, (String|null)=): {}), cleanup: (function(): Promise<*>), getAPIRealtime: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}), getAPIResponseTime: (function(*=, *=, *=): {string: {}}), getAllowedStatsPrecisions: (function(): *), getAllowedProfiles: (function(): *), getProviderAPIResponseTime: (function(*=, *=, *=, *=): {string: {averageResponseTime: Number, hits: Number}}), validateStatsDate: module.exports.validateStatsDate, updateAPIResponseTime: module.exports.updateAPIResponseTime, getAPICallsStatsByProfile: (function((String|null)=, (String|null)=): {}), REQUEST_TYPE_ERROR: string, connect: (function(): Promise<void>)}}
  */
 module.exports = {
     connect: () => {
@@ -248,6 +248,22 @@ module.exports = {
         logger.verbose(`[STATS][VIEW] Retrieve response times for the ${entryPoint} operation by ${precision} across ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService);
         return await reader.getResponseTimesData(entryPoint, precision);
+    },
+    /**
+     *
+     * @param provider
+     * @param entryPoint
+     * @param precision
+     * @param profile
+     * @returns {Promise<{string: {averageResponseTime: Number, hits: Number}}>}
+     */
+    getProviderAPIResponseTime: async (provider, entryPoint, precision = null, profile = null) => {
+        precision = precision || defaultResponsetimePrecision;
+        assert(precision === null || config.get('stats.responseTimePrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.responseTimePrecisions').join(', ')}`);
+        logger.verbose(`[STATS][VIEW] Retrieve provider response times for the ${entryPoint} operation by ${precision} across ${profile || 'all profiles'}`);
+        const reader = new StatsReader(storageService);
+        return await reader.getProviderResponseTimesData(provider, entryPoint, precision);
     },
     /**
      * Вернет статистику по всем запросам указанного провайдера за указанный промежуток времени.

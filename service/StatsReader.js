@@ -74,6 +74,17 @@ class StatsReader {
     async getResponseTimesData(entryPoint, precision = '1 minutes') {
         return this._storage.getResponseTimesData(`${keyModule.generateResponseTimeName(entryPoint)}:${precisionModule.precisionsInSeconds.get(precision)}`);
     }
+    /**
+     * Получение среднего времени запроса для указанного провайдера
+     *
+     * @param {string} provider
+     * @param {string} entryPoint
+     * @param {string} precision
+     * @returns {Promise<{string: {averageResponseTime: Number, hits: Number}}>}
+     */
+    async getProviderResponseTimesData(provider, entryPoint, precision = '1 minutes') {
+        return this._storage.getProviderResponseTimesData(provider, `${keyModule.generateResponseTimeName(entryPoint)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+    }
 }
 
 module.exports = StatsReader;
