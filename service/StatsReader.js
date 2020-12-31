@@ -32,7 +32,7 @@ class StatsReader {
      * @return {Promise<{string: string}>} {<operationName>: hits, <operationName2>: hits}
      */
     async getProviderStatsData(provider, profile, precision, value) {
-        return this._storage.getProviderAggregateHits(provider, `${keyModule.generateStatsName('request', profile)}:${precisionModule.valueToDate(precision, value)}`);
+        return this._storage.getProviderAggregateHits(provider, `${keyModule.generateStatsName(this._type, profile)}:${precisionModule.valueToDate(precision, value)}`);
     };
 
 
