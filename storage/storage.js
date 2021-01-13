@@ -7,7 +7,7 @@ class Storage {
      * @param updateBy
      * @return {Promise<void>}
      */
-    async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {}
+    async updateTimeseriesCounter(timeSlicedHashes, updateBy = 1) {}
 
     /**
      * Обновляет среднюю длительность запроса операции по временным отрезкам
@@ -51,7 +51,7 @@ class Storage {
      * @param offset
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getRealtimeCounterData(hash, limit = null, offset = 0) {}
+    async getTimeseriesCounterData(hash, limit = null, offset = 0) {}
 
     /**
      * Возвращает среднее время ответа по временным промежуткам
@@ -87,7 +87,7 @@ class Storage {
      * Вернет названия ключей, ассоциированных с записями реального времени
      * @return {Promise<[]>}
      */
-    async getRealtimeKeys() {}
+    async getTimeseriesKeys() {}
 
     /**
      * Удаляет записи об общем количестве вызовов
@@ -108,7 +108,7 @@ class Storage {
      * @param  {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @returns {Promise<void>}
      */
-    async deleteRealtimeCounterDataOlderThan(timestamp) {};
+    async deleteTimeseriesCounterDataOlderThan(timestamp) {};
 
     /**
      * Удаляет старые записи о длительности выполнения запросов

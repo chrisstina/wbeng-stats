@@ -14,18 +14,18 @@ class StatsCleaner {
     }
 
     flushOldAggregateData() {
-        const timestamp = moment().subtract(...statsConfig.totalHitsPrecisionsTTL.split(' ')).unix();
+        const timestamp = moment().subtract(...statsConfig.totalHitsTTL.split(' ')).unix();
         this._storage.safeDeleteTotalHitsOlderThan(timestamp);
         this._storage.safeDeleteProviderTotalHitsOlderThan(timestamp);
     }
 
-    flushOldRealtimeData() {
-        const timestamp = moment().subtract(moment.duration(...statsConfig.realtimePrecisionsTTL.split(' '))).unix();
-        this._storage.deleteRealtimeCounterDataOlderThan(timestamp);
+    flushOldTimeseriesData() {
+        const timestamp = moment().subtract(moment.duration(...statsConfig.timeseriesCounterTTL.split(' '))).unix();
+        this._storage.deletetimeseriesCounterDataOlderThan(timestamp);
     }
 
     flushOldResponsetimeData() {
-        const timestamp = moment().subtract(moment.duration(...statsConfig.responseTimePrecisionsTTL.split(' '))).unix();
+        const timestamp = moment().subtract(moment.duration(...statsConfig.responseTimeTTL.split(' '))).unix();
         this._storage.deleteResponsetimeDataOlderThan(timestamp);
         this._storage.deleteProviderResponsetimeDataOlderThan(timestamp);
     }

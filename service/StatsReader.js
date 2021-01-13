@@ -46,8 +46,8 @@ class StatsReader {
      * @param {Number} offset
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getRealtimeCounterData(precision, entryPoint = null, profile = null, limit = null, offset = 0) {
-        return this._storage.getRealtimeCounterData(`${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+    async getTimeseriesHits(precision, entryPoint = null, profile = null, limit = null, offset = 0) {
+        return this._storage.getTimeseriesCounterData(`${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
     };
 
     /**
@@ -60,8 +60,8 @@ class StatsReader {
      * @param {Number} offset
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getProviderRealtimeCounterData(provider, precision, entryPoint = null, profile = null, limit = null, offset = 0) {
-        return this._storage.getProviderRealtimeCounterData(provider, `${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+    async getProviderTimeseriesHits(provider, precision, entryPoint = null, profile = null, limit = null, offset = 0) {
+        return this._storage.getProviderTimeseriesCounterData(provider, `${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
     };
 
     /**

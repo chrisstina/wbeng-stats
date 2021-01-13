@@ -29,7 +29,7 @@ statsConfig.get('totalHitsPrecisions').forEach((precision, idx) => {
  * @type {Map<String, Number>}
  */
 const precisionsInSeconds = new Map();
-    [...statsConfig.get('realtimePrecisions'),
+    [...statsConfig.get('timeseriesPrecisions'),
     ...statsConfig.get('responseTimePrecisions')]
     .forEach(precision => {
         precisionsInSeconds.set(precision, getPrecisionInSeconds(precision));

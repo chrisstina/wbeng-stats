@@ -20,7 +20,7 @@ class RedisStorage extends Storage {
         });
     }
 
-    async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
+    async updateTimeseriesCounter(timeSlicedHashes, updateBy = 1) {
 
         const pipe = this.client.multi(); // открываем транзакцию
 
@@ -71,7 +71,7 @@ class RedisStorage extends Storage {
         throw new Error('Not implemented');
     }
 
-    async getRealtimeCounterData(hash, limit = null, offset = 0) {
+    async getTimeseriesCounterData(hash, limit = null, offset = 0) {
         const retrieveDataAsync = promisify(this.client.hgetall).bind(this.client);
         try {
             return await retrieveDataAsync(`count:${hash}`);

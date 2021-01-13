@@ -16,9 +16,9 @@ class MockStorage extends Storage {
      * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:allmethods:allprofiles3600
      * @param updateBy
      */
-    async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
+    async updateTimeseriesCounter(timeSlicedHashes, updateBy = 1) {
         try {
-            logger.verbose('[STATS][STORAGE][MOCK] updateRealtimeCounter');
+            logger.verbose('[STATS][STORAGE][MOCK] updatetimeseriesCounter');
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }
@@ -38,7 +38,7 @@ class MockStorage extends Storage {
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
      * @param {Number} updateBy default 1
      */
-    async updateAggregateHits(operation, hashesToUpdate, updateBy = 1) {
+    async updateTotalHits(operation, hashesToUpdate, updateBy = 1) {
         try {
             logger.verbose('[STATS][STORAGE][MOCK] updateAggregateHits');
         } catch (e) {
@@ -46,7 +46,7 @@ class MockStorage extends Storage {
         }
     }
 
-    async updateProviderAggregateHits(provider, operation, hashesToUpdate, updateBy = 1) {
+    async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {
         try {
             logger.verbose('[STATS][STORAGE][MOCK] updateProviderAggregateHits');
         } catch (e) {
@@ -54,12 +54,12 @@ class MockStorage extends Storage {
         }
     }
 
-    async getRealtimeCounterData(hash, limit = null, offset = 0) {
-        logger.verbose('[STATS][STORAGE][MOCK] getRealtimeCounterData');
+    async getTimeseriesCounterData(hash, limit = null, offset = 0) {
+        logger.verbose('[STATS][STORAGE][MOCK] gettimeseriesCounterData');
         return {};
     }
 
-    async getAggregateHits(hash) {
+    async getTotalHits(hash) {
         logger.verbose(`[STATS][STORAGE][MOCK] getOperationTotalsData for ${hash}`);
         return {
             hash,
@@ -70,14 +70,14 @@ class MockStorage extends Storage {
         };
     }
 
-    async getProviderAggregateHits(provider, hash) {
+    async getProviderTotalHits(provider, hash) {
         logger.verbose('[STATS][STORAGE][MOCK] getProviderAggregateHits');
 
         return {};
     }
 
-    async getRealtimeKeys() {
-        logger.verbose('[STATS][STORAGE][MOCK] getRealtimeKeys');
+    async getTimeseriesKeys() {
+        logger.verbose('[STATS][STORAGE][MOCK] gettimeseriesKeys');
         return {};
     }
 

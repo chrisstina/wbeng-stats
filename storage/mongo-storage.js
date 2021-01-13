@@ -3,7 +3,7 @@ const moment = require('moment');
 
 const logger = require('./../logger');
 
-const COUNTER_COLLECTION = 'realtime_hits';
+const COUNTER_COLLECTION = 'timeseries_hits';
 const STATS_COLLECTION = 'total_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_STATS_COLLECTION = 'provider_total_hits';
@@ -59,7 +59,7 @@ class MongoStorage extends Storage {
      * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:allmethods:allprofiles3600
      * @param updateBy
      */
-    async updateRealtimeCounter(timeSlicedHashes, updateBy = 1) {
+    async updateTimeseriesCounter(timeSlicedHashes, updateBy = 1) {
         try {
             const database = this.client.db("wbeng-stats");
             const collection = database.collection(COUNTER_COLLECTION);
@@ -191,7 +191,7 @@ class MongoStorage extends Storage {
 
     // ============= Получение =============
 
-    async getRealtimeCounterData(hash, limit = null, offset = 0) {
+    async getTimeseriesCounterData(hash, limit = null, offset = 0) {
         const stats = await this.client
             .db(this.config.dbName)
             .collection(COUNTER_COLLECTION)
@@ -263,7 +263,7 @@ class MongoStorage extends Storage {
         await this.safeDelete(PROVIDER_STATS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
 
-    async deleteRealtimeCounterDataOlderThan(timestamp) {
+    async deleteTimeseriesCounterDataOlderThan(timestamp) {
         await this.deleteTimestampedDataOlderThan(COUNTER_COLLECTION, timestamp);
     };
 

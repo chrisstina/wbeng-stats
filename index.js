@@ -51,7 +51,7 @@ const initStorageService = storageName => {
 };
 
 const defaultResponsetimePrecision = config.get('stats.responseTimePrecisions')[0];
-const defaultRealtimePrecision = config.get('stats.realtimePrecisions')[0];
+const defaultTimeseriesPrecision = config.get('stats.timeseriesPrecisions')[0];
 const defaultStatsPrecision = config.get('stats.totalHitsPrecisions')[0];
 
 /**
@@ -66,7 +66,7 @@ const getDefaultValueForPrecision = precision => {
 
 /**
  *
- * @type {{getProviderAPIStats: (function(String, String, (String|null)=, (String|null)=, (String|null)=): {string: string}), getAllowedOperations: (function(): *), getAPIStats: (function(String, (String|null)=, (String|null)=, (String|null)=): {string: string}), getAllowedRealtimePrecisions: (function(): *), updateProviderAPICalls: module.exports.updateProviderAPICalls, updateProviderResponseTime: module.exports.updateProviderResponseTime, REQUEST_TYPE_CALL: string, updateAPICalls: module.exports.updateAPICalls, getAPICallsStatsByProvider: (function(String, (String|null)=, (String|null)=): {}), cleanup: (function(): Promise<*>), getAPIRealtime: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}), getAPIResponseTime: (function(*=, *=, *=): {string: {}}), getAllowedStatsPrecisions: (function(): *), getAllowedProfiles: (function(): *), getProviderAPIResponseTime: (function(*=, *=, *=, *=): {string: {averageResponseTime: Number, hits: Number}}), validateStatsDate: module.exports.validateStatsDate, updateAPIResponseTime: module.exports.updateAPIResponseTime, getAPICallsStatsByProfile: (function((String|null)=, (String|null)=): {}), REQUEST_TYPE_ERROR: string, connect: (function(): Promise<void>)}}
+ * @type {{getProviderAPIStats: (function(String, String, (String|null)=, (String|null)=, (String|null)=): {string: string}), getAllowedOperations: (function(): *), getAPIStats: (function(String, (String|null)=, (String|null)=, (String|null)=): {string: string}), getAllowedtimeseriesPrecisions: (function(): *), updateProviderAPICalls: module.exports.updateProviderAPICalls, updateProviderResponseTime: module.exports.updateProviderResponseTime, REQUEST_TYPE_CALL: string, updateAPICalls: module.exports.updateAPICalls, getAPICallsStatsByProvider: (function(String, (String|null)=, (String|null)=): {}), cleanup: (function(): Promise<*>), getAPItimeseries: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}), getAPIResponseTime: (function(*=, *=, *=): {string: {}}), getAllowedStatsPrecisions: (function(): *), getAllowedProfiles: (function(): *), getProviderAPIResponseTime: (function(*=, *=, *=, *=): {string: {averageResponseTime: Number, hits: Number}}), validateStatsDate: module.exports.validateStatsDate, updateAPIResponseTime: module.exports.updateAPIResponseTime, getAPICallsStatsByProfile: (function((String|null)=, (String|null)=): {}), REQUEST_TYPE_ERROR: string, connect: (function(): Promise<void>)}}
  */
 module.exports = {
     connect: () => {
@@ -76,7 +76,7 @@ module.exports = {
      * Список допустимых отрезков времени для получения данных реального времени
      * @return {[]}
      */
-    getAllowedRealtimePrecisions: () => config.get('stats.realtimePrecisions'),
+    getAllowedTimeseriesPrecisions: () => config.get('stats.timeseriesPrecisions'),
     /**
      * Список допустимых отрезков времени для получения данных статистики запросов
      * @return {[]}
@@ -115,12 +115,12 @@ module.exports = {
 
         const updater = new StatsUpdater(storageService, type, precisionFormats);
 
-        updater.incrementRealtimeCounter();// все запросы всех пользователей
-        updater.incrementRealtimeCounter(entryPoint); // конкретный тип запроса всех пользователей
+        updater.incrementTimeseriesHits();// все запросы всех пользователей
+        updater.incrementTimeseriesHits(entryPoint); // конкретный тип запроса всех пользователей
         updater.incrementOperationTotals(entryPoint);
         if (profile) {
-            updater.incrementRealtimeCounter(null, profile);  // все запросы пользователя
-            updater.incrementRealtimeCounter(entryPoint, profile); // конкретный тип запроса пользователя
+            updater.incrementTimeseriesHits(null, profile);  // все запросы пользователя
+            updater.incrementTimeseriesHits(entryPoint, profile); // конкретный тип запроса пользователя
             updater.incrementOperationTotals(entryPoint, profile);
         }
     },
@@ -187,19 +187,19 @@ module.exports = {
      * @param offset
      * @return {Promise<{}|null>}
      */
-    getAPIRealtime: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+    getTimeseriesHits: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
-        precision = precision || defaultRealtimePrecision;
+        precision = precision || defaultTimeseriesPrecision;
 
-        if (config.get('stats.realtimePrecisions').indexOf(precision) === -1) {
-            precision = defaultRealtimePrecision;
+        if (config.get('stats.timeseriesPrecisions').indexOf(precision) === -1) {
+            precision = defaultTimeseriesPrecision;
             logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
         }
         logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService, type);
-        return await reader.getRealtimeCounterData(precision, entryPoint, profile, limit, offset);
+        return await reader.getTimeseriesHits(precision, entryPoint, profile, limit, offset);
     },
     /**
      * Вернет статистику по всем запросам за указанный промежуток времени.
@@ -369,7 +369,7 @@ module.exports = {
     cleanup: () => {
         const cleaner = new StatsCleaner(storageService);
         cleaner.flushOldAggregateData();
-        cleaner.flushOldRealtimeData();
+        cleaner.flushOldTimeseriesData();
         cleaner.flushOldResponsetimeData();
         logger.verbose(`[STATS][CLEANER] Cleaning has been executed`);
     },

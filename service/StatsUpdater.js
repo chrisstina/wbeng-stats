@@ -61,19 +61,19 @@ class StatsUpdater {
      * @param profile
      * @return {Promise<*>}
      */
-    incrementRealtimeCounter(entryPoint = null, profile = null) {
+    incrementTimeseriesHits(entryPoint = null, profile = null) {
         const keyName = keyModule.generateCounterName(this._type, entryPoint, profile);
         /**
          *
          * @type {Map<Number, String>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
          */
         const timeSlicedHashes = new Map();
-        statsConfig.get('realtimePrecisions').forEach(precision => {
+        statsConfig.get('timeseriesPrecisions').forEach(precision => {
             const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
             timeSlicedHashes.set(precisionModule.getTimeSliceStart(precisionInSeconds), `${keyName}:${precisionInSeconds}`);
         });
 
-        return this._storage.updateRealtimeCounter(timeSlicedHashes);
+        return this._storage.updateTimeseriesCounter(timeSlicedHashes);
     }
 
     /**

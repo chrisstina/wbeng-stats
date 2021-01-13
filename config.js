@@ -1,22 +1,25 @@
 module.exports = {
-    realtimePrecisions: [ // возможная величина временных отрезков для счетчиков текущих запросов
+    timeseriesPrecisions: [ // возможный масштаб временных отрезков для исторических данных
         "1 minutes",
+        "1 hours",
+        "1 days",
+        "1 months"
     ],
     responseTimePrecisions: [ // возможная величина временных отрезков для статистики длительности запроса
         "30 seconds",
         "1 minutes",
     ],
     totalHitsPrecisions: [ // возможная величина временных отрезков для сбора итоговой статистики по запросам
-        "minute",
-        "hour",
         "day",
         "week",
         "month",
         "year",
+        "minute",
+        "hour"
     ],
-    realtimePrecisionsTTL: "2 days", // сколько храним данные по запросам в реальном времени
-    responseTimePrecisionsTTL: "1 week",  // сколько храним данные по длительности запросов
-    totalHitsPrecisionsTTL: "3 months",  // сколько храним данные по итоговой статистике запросами
+    timeseriesCounterTTL: "2 days", // сколько храним данные по запросам в реальном времени
+    responseTimeTTL: "1 week",  // сколько храним данные по длительности запросов
+    totalHitsTTL: "3 months",  // сколько храним данные по итоговой статистике запросами
     precisionFormats: [
         "Y:MM:DD:HH:mm", // 2020:01:09:00:30
         "Y:MM:DD:HH", // 2020:01:09:00

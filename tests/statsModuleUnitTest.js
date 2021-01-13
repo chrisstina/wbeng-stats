@@ -22,7 +22,7 @@ describe('Stats module', () => {
     });
 
     it('should list api stats for profile', async function () {
-        const statsRequestsTodayAll = await statsModule.getAPIStats();
+        const statsRequestsTodayAll = await statsModule.getAPIStats('request');
         expect(statsRequestsTodayAll).to.have.property('hash', `apirequests:allprofiles:${moment().format('YYYY')}:${moment().format('MM')}:${moment().format('DD')}`);
         expect(statsRequestsTodayAll).to.have.property('flights').which.is.finite;
         expect(statsRequestsTodayAll).to.have.property('price').which.is.finite;
@@ -82,7 +82,7 @@ describe('Stats module', () => {
 
     it.skip('should list api stats table for every profile', function (done) {});
 
-    it.skip('should list realtime api stats for profile', function (done) {
+    it.skip('should list timeseries api stats for profile', function (done) {
     });
 
     it('should return avg response time per minute for flight operation across all profiles', async function () {
