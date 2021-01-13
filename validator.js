@@ -1,7 +1,54 @@
 const moment = require('moment');
+/**
+ * Допустимые значения для времени:
+ * дата в формате 2020-08-19T03:55
+ * дата в формате 20200819T0355
+ *
+ * @param value
+ * @throws Error
+ */
+const checkMinute = value => {
+    if ( ! ( /^\d{4}-\d{2}-\d{2}T(0[0-9]|1[0-9]|2[0-3]):([0-5][0-9])$/.test(value) || /^\d{8}T\d{4}$/.test(value)) ) {
+        throw new Error('Недопустимое значение времени. Допустимый формат: Y-M-DTH:M (например, 2020-08-19T03:55) или YMDTHM (например, 20200819T0355)');
+    }
+};
 
 /**
- * Допустипые значения для дня:
+ *
+ * @param value
+ * @return {string} день и время в формате moment (Y-M-DTH) например, 2020-08-19T03:55 или 20200819T0355 понятный для moment
+ */
+const normalizeMinute = value => {
+    checkMinute(value);
+    return value;
+};
+
+/**
+ * Допустимые значения для часа:
+ * дата в формате 2020-08-19T03
+ * дата в формате 20200819T03
+ *
+ * @param value
+ * @throws Error
+ */
+const checkHour = value => {
+    if ( ! ( /^\d{4}-\d{2}-\d{2}T(0[0-9]|1[0-9]|2[0-3])$/.test(value) || /^\d{8}T(0[0-9]|1[0-9]|2[0-3])$/.test(value)) ) {
+        throw new Error('Недопустимое значение часа. Допустимый формат: Y-M-DTH (например, 2020-08-19T03) или YMDH (например, 20200819T03)');
+    }
+};
+
+/**
+ *
+ * @param value
+ * @return {string} день и час в формате moment (Y-M-DTH) например, 2020-08-19T03 или 20200819T03 понятный для moment
+ */
+const normalizeHour = value => {
+    checkHour(value);
+    return value;
+};
+
+/**
+ * Допустимые значения для дня:
  * дата в формате 2020-08-19
  * дата в формате 20200819
  *
@@ -120,12 +167,16 @@ const normalizeYear = value => {
 
 module.exports = {
     normalizers: {
+        'minute': normalizeMinute,
+        'hour': normalizeHour,
         'day': normalizeDay,
         'week': normalizeWeek,
         'month': normalizeMonth,
         'year': normalizeYear
     },
     checkers: {
+        'minute': checkMinute,
+        'hour': checkHour,
         'day': checkDay,
         'week': checkWeek,
         'month': checkMonth,

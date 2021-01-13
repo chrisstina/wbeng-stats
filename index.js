@@ -59,7 +59,10 @@ const defaultStatsPrecision = config.get('stats.aggregateHitsPrecisions')[0];
  * @param {string} precision - day, week, month, year
  * @return {string} текущее значение в нужном формате: например: 1.Aug.2020, 34.2020, Aug.2020, 2020
  */
-const getDefaultValueForPrecision = precision =>  moment().format(precisionFormats.get(precision).replace(/:/g, ''));
+const getDefaultValueForPrecision = precision => {
+    const [y, m, d, h, mm] = precisionFormats.get(precision).split(':');
+    return moment().format([y, m, d].join('') + (h ? `T${[h,mm].join('')}` : ''));
+}
 
 /**
  *
