@@ -4,9 +4,9 @@ const moment = require('moment');
 const logger = require('./../logger');
 
 const COUNTER_COLLECTION = 'realtime_hits';
-const STATS_COLLECTION = 'aggregate_hits';
+const STATS_COLLECTION = 'total_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
-const PROVIDER_STATS_COLLECTION = 'provider_aggregate_hits';
+const PROVIDER_STATS_COLLECTION = 'provider_total_hits';
 const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime';
 
 const HASH_DELIMITER = ':';
@@ -151,7 +151,7 @@ class MongoStorage extends Storage {
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
      * @param {Number} updateBy default 1
      */
-    async updateAggregateHits(operation, hashesToUpdate, updateBy = 1) {
+    async updateTotalHits(operation, hashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(STATS_COLLECTION);
@@ -170,7 +170,7 @@ class MongoStorage extends Storage {
         }
     }
 
-    async updateProviderAggregateHits(provider, operation, hashesToUpdate, updateBy = 1) {
+    async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(`${PROVIDER_STATS_COLLECTION}`);
@@ -229,7 +229,7 @@ class MongoStorage extends Storage {
             : stats;
     }
 
-    async getAggregateHits(hash) {
+    async getTotalHits(hash) {
         const stats = await this.client
             .db(this.config.dbName)
             .collection(STATS_COLLECTION)
@@ -241,7 +241,7 @@ class MongoStorage extends Storage {
             : stats;
     }
 
-    async getProviderAggregateHits(provider, hash) {
+    async getProviderTotalHits(provider, hash) {
         const stats = await this.client
             .db(this.config.dbName)
             .collection(PROVIDER_STATS_COLLECTION)
@@ -255,11 +255,11 @@ class MongoStorage extends Storage {
 
     // ============= Удаление =============
 
-    async safeDeleteAggregateHitsOlderThan(timestamp) {
+    async safeDeleteTotalHitsOlderThan(timestamp) {
         await this.safeDelete(STATS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
 
-    async safeDeleteProviderAggregateHitsOlderThan(timestamp) {
+    async safeDeleteProviderTotalHitsOlderThan(timestamp) {
         await this.safeDelete(PROVIDER_STATS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
 

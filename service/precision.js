@@ -20,7 +20,7 @@ const getPrecisionInSeconds = precision => {
  * @type {Map<String, String>}
  */
 const precisionFormats = new Map();
-statsConfig.get('aggregateHitsPrecisions').forEach((precision, idx) => {
+statsConfig.get('totalHitsPrecisions').forEach((precision, idx) => {
     precisionFormats.set(precision, statsConfig.get('precisionFormats')[idx])
 });
 

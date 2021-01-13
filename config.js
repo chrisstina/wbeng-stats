@@ -6,7 +6,7 @@ module.exports = {
         "30 seconds",
         "1 minutes",
     ],
-    "aggregateHitsPrecisions": [ // возможная величина временных отрезков для сбора итоговой статистики по запросам
+    totalHitsPrecisions: [ // возможная величина временных отрезков для сбора итоговой статистики по запросам
         "minute",
         "hour",
         "day",
@@ -16,8 +16,8 @@ module.exports = {
     ],
     realtimePrecisionsTTL: "2 days", // сколько храним данные по запросам в реальном времени
     responseTimePrecisionsTTL: "1 week",  // сколько храним данные по длительности запросов
-    aggregateHitsPrecisionsTTL: "3 months",  // сколько храним данные по итоговой статистике запросами
-    "precisionFormats": [
+    totalHitsPrecisionsTTL: "3 months",  // сколько храним данные по итоговой статистике запросами
+    precisionFormats: [
         "Y:MM:DD:HH:mm", // 2020:01:09:00:30
         "Y:MM:DD:HH", // 2020:01:09:00
         "Y:MM:DD", // 2020:01:09

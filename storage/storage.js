@@ -32,7 +32,7 @@ class Storage {
      * @param {Number} updateBy default 1
      * @return {Promise<void>}
      */
-    async updateAggregateHits(operation, hashesToUpdate, updateBy = 1) {}
+    async updateTotalHits(operation, hashesToUpdate, updateBy = 1) {}
 
     /**
      * Обновляет статистику запросов на операцию конкретного провайдера по временным отрезкам.
@@ -42,7 +42,7 @@ class Storage {
      * @param {Number} updateBy default 1
      * @return {Promise<void>}
      */
-    async updateProviderAggregateHits(provider, operation, hashesToUpdate, updateBy = 1) {}
+    async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {}
 
     /**
      * Возвращает разбивку событий по временным промежуткам
@@ -65,7 +65,7 @@ class Storage {
      * @param hash ключ, например apirequests:default:2020:W35
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
-    async getAggregateHits(hash) {}
+    async getTotalHits(hash) {}
 
     /**
      * Возвращает разбивку по количеству операций на указанный промежуток времени (ключ) для провайдера
@@ -73,7 +73,7 @@ class Storage {
      * @param hash ключ, например apirequests:default:2020:W35
      * @return {Promise<{string: number}>} {<entryPoint1>: <hits count>, <entryPoint2>: <hits count>}
      */
-    async getProviderAggregateHits(provider, hash) {}
+    async getProviderTotalHits(provider, hash) {}
 
     /**
      * Возвращает среднее время ответа по временным промежуткам для провайдера
@@ -94,14 +94,14 @@ class Storage {
      * @param {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @return {Promise<void>}
      */
-    async safeDeleteAggregateHitsOlderThan(timestamp) {}
+    async safeDeleteTotalHitsOlderThan(timestamp) {}
 
     /**
      * Удаляет записи о количестве вызовов провайдеров
      * @param {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @returns {Promise<void>}
      */
-    async safeDeleteProviderAggregateHitsOlderThan(timestamp) {}
+    async safeDeleteProviderTotalHitsOlderThan(timestamp) {}
 
     /**
      *

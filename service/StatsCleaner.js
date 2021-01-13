@@ -14,9 +14,9 @@ class StatsCleaner {
     }
 
     flushOldAggregateData() {
-        const timestamp = moment().subtract(...statsConfig.aggregateHitsPrecisionsTTL.split(' ')).unix();
-        this._storage.safeDeleteAggregateHitsOlderThan(timestamp);
-        this._storage.safeDeleteProviderAggregateHitsOlderThan(timestamp);
+        const timestamp = moment().subtract(...statsConfig.totalHitsPrecisionsTTL.split(' ')).unix();
+        this._storage.safeDeleteTotalHitsOlderThan(timestamp);
+        this._storage.safeDeleteProviderTotalHitsOlderThan(timestamp);
     }
 
     flushOldRealtimeData() {
