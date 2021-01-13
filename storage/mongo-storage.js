@@ -111,7 +111,7 @@ class MongoStorage extends Storage {
 
     async updateAPIResponseTime(timeSlicedHashes, responseTime) {
         try {
-            const database = this.client.db("wbeng-stats");
+            const database = this.client.db(this.config.dbName);
             const collection = database.collection(RESPONSETIME_COLLECTION);
 
             for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
@@ -128,7 +128,7 @@ class MongoStorage extends Storage {
 
     async updateProviderResponseTime(timeSlicedHashes, responseTime) {
         try {
-            const database = this.client.db("wbeng-stats");
+            const database = this.client.db(this.config.dbName);
             const collection = database.collection(`${PROVIDER_RESPONSETIME_COLLECTION}`);
 
             for (const [hash, timeSlice] of timeSlicedHashes.entries()) {
