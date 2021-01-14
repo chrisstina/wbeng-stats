@@ -230,7 +230,7 @@ module.exports = {
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService, type);
-        return await reader.getStatsData(profile, precision, value);
+        return await reader.getTotalHits(profile, precision, value);
     },
     /**
      * Вернет статистику по средней длительности запроса.
@@ -250,7 +250,7 @@ module.exports = {
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.responseTimePrecisions').join(', ')}`);
         logger.verbose(`[STATS][VIEW] Retrieve response times for the ${entryPoint} operation by ${precision} across ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService);
-        return await reader.getResponseTimesData(entryPoint, precision);
+        return await reader.getTimeseriesResponseTime(entryPoint, precision);
     },
     /**
      *
@@ -266,7 +266,7 @@ module.exports = {
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.responseTimePrecisions').join(', ')}`);
         logger.verbose(`[STATS][VIEW] Retrieve provider response times for the ${entryPoint} operation by ${precision} across ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService);
-        return await reader.getProviderResponseTimesData(provider, entryPoint, precision);
+        return await reader.getProviderTimeseriesResponseTime(provider, entryPoint, precision);
     },
     /**
      * Вернет статистику по всем запросам или ошибкам указанного провайдера за указанный промежуток времени.
@@ -291,7 +291,7 @@ module.exports = {
         value = value || getDefaultValueForPrecision(precision);
         logger.verbose(`[STATS][VIEW] Retrieve ${provider} API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService, type);
-        return await reader.getProviderStatsData(provider, profile, precision, value);
+        return await reader.getProviderTotalHits(provider, profile, precision, value);
     },
     /**
      * Вернет таблицу данных по всем операциям для каждого профайла.
@@ -322,7 +322,7 @@ module.exports = {
         const table = {};
 
         for (const profile of config.get('stats.allowedProfiles')) {
-            table[profile] = await reader.getStatsData(profile, precision, value);
+            table[profile] = await reader.getTotalHits(profile, precision, value);
         }
 
         return table;
@@ -357,7 +357,7 @@ module.exports = {
         const table = {};
 
         for (const provider of config.get('stats.allowedProviders')) {
-            table[provider] = await reader.getProviderStatsData(provider, profile, precision, value);
+            table[provider] = await reader.getProviderTotalHits(provider, profile, precision, value);
         }
 
         return table;
@@ -368,9 +368,9 @@ module.exports = {
      */
     cleanup: () => {
         const cleaner = new StatsCleaner(storageService);
-        cleaner.flushOldAggregateData();
-        cleaner.flushOldTimeseriesData();
-        cleaner.flushOldResponsetimeData();
+        cleaner.flushOldTotals();
+        cleaner.flushOldTimeseries();
+        cleaner.flushOldResponseTime();
         logger.verbose(`[STATS][CLEANER] Cleaning has been executed`);
     },
     REQUEST_TYPE_CALL,

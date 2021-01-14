@@ -43,7 +43,7 @@ describe('Stats module', () => {
         expect(statsErrorsSomeWeekDefault).to.have.property('price').which.is.finite;
 
         const statsRequestsLastYearAll = await statsModule.getAPIStats('request', null, 'year');
-        expect(statsRequestsLastYearAll).to.have.property('hash', `apirequests:allprofiles:2020`);
+        expect(statsRequestsLastYearAll).to.have.property('hash', `apirequests:allprofiles:2021`);
         expect(statsRequestsLastYearAll).to.have.property('flights').which.is.finite;
         expect(statsRequestsLastYearAll).to.have.property('price').which.is.finite;
     });

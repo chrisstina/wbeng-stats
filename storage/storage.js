@@ -7,7 +7,7 @@ class Storage {
      * @param updateBy
      * @return {Promise<void>}
      */
-    async updateTimeseriesCounter(timeSlicedHashes, updateBy = 1) {}
+    async updateTimeseriesHits(timeSlicedHashes, updateBy = 1) {}
 
     /**
      * Обновляет среднюю длительность запроса операции по временным отрезкам
@@ -15,7 +15,7 @@ class Storage {
      * @param responseTime значение длительности обработки запроса
      * @return {Promise<void>}
      */
-    async updateAPIResponseTime(timeSlicedHashes, responseTime) {}
+    async updateTimeseriesResponseTime(timeSlicedHashes, responseTime) {}
 
     /**
      * Обновляет среднюю длительность запроса операции конкретного провайдера по временным отрезкам
@@ -23,7 +23,7 @@ class Storage {
      * @param responseTime значение длительности обработки запроса
      * @return {Promise<void>}
      */
-    async updateProviderResponseTime(timeSlicedHashes, responseTime) {}
+    async updateProviderTimeseriesResponseTime(timeSlicedHashes, responseTime) {}
 
     /**
      * Обновляет статистику запросов на операцию по временным отрезкам.
@@ -51,14 +51,14 @@ class Storage {
      * @param offset
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getTimeseriesCounterData(hash, limit = null, offset = 0) {}
+    async getTimeseriesHits(hash, limit = null, offset = 0) {}
 
     /**
      * Возвращает среднее время ответа по временным промежуткам
      * @param {String} hash
      * @return {Promise<{string: {}}>} {<timeslice1>: {averageResponseTime: <float>, hits: <number>}, {averageResponseTime: <float>, hits: <number>}}
      */
-    async getResponseTimesData(hash) {}
+    async getTimeseriesResponseTime(hash) {}
 
     /**
      * Возвращает разбивку по количеству операций на указанный промежуток времени (ключ)
@@ -81,7 +81,7 @@ class Storage {
      * @param hash
      * @returns {Promise<void>}
      */
-    async getProviderResponseTimesData(provider, hash) {}
+    async getProviderTimeseriesResponseTime(provider, hash) {}
 
     /**
      * Вернет названия ключей, ассоциированных с записями реального времени
@@ -108,21 +108,21 @@ class Storage {
      * @param  {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @returns {Promise<void>}
      */
-    async deleteTimeseriesCounterDataOlderThan(timestamp) {};
+    async deleteTimeseriesHitsOlderThan(timestamp) {};
 
     /**
      * Удаляет старые записи о длительности выполнения запросов
      * @param  {Number} timestamp timestamp дата, записи старше которой надо удалить.
      * @returns {Promise<void>}
      */
-    async deleteResponsetimeDataOlderThan(timestamp) {};
+    async deleteTimeseriesResponseTimeOlderThan(timestamp) {};
 
     /**
      * Удаляет старые записи о длительности выполнения запросов провайдеров
      * @param timestamp
      * @returns {Promise<void>}
      */
-    async deleteProviderResponsetimeDataOlderThan(timestamp) {};
+    async deleteProviderTimeseriesResponseTimeOlderThan(timestamp) {};
 
     async flushDeleted() {}
 }

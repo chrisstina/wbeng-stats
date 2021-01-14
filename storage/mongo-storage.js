@@ -59,7 +59,7 @@ class MongoStorage extends Storage {
      * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:allmethods:allprofiles3600
      * @param updateBy
      */
-    async updateTimeseriesCounter(timeSlicedHashes, updateBy = 1) {
+    async updateTimeseriesHits(timeSlicedHashes, updateBy = 1) {
         try {
             const database = this.client.db("wbeng-stats");
             const collection = database.collection(COUNTER_COLLECTION);
@@ -76,40 +76,7 @@ class MongoStorage extends Storage {
         }
     }
 
-    /**
-     *
-     * @param collection
-     * @param query
-     * @param timeSlice
-     * @param responseTime
-     * @return {Promise<number>}
-     */
-    async getAvgForTimeSlice(collection, query, timeSlice, responseTime) {
-        const options = {projection: {}};
-        options.projection[timeSlice] = 1;
-        const responseTimeForTimeSlice = await collection.findOne(query, options);
-
-        let updatedAverageResponseTime = responseTime;
-        if (responseTimeForTimeSlice !== null && responseTimeForTimeSlice[timeSlice]) { //( n * a + v ) / n + 1;
-            const {hits, averageResponseTime} = responseTimeForTimeSlice[timeSlice];
-            return this.updateAverage(hits, averageResponseTime, responseTime);
-        }
-        return updatedAverageResponseTime;
-    }
-
-    /**
-     *
-     * @param currentCount
-     * @param currentAverage
-     * @param updateWithValue
-     * @return {number}
-     */
-    updateAverage(currentCount, currentAverage, updateWithValue) {
-        const n = currentCount + 1; // new count
-        return (n * currentAverage + updateWithValue) / (n + 1);
-    }
-
-    async updateAPIResponseTime(timeSlicedHashes, responseTime) {
+    async updateTimeseriesResponseTime(timeSlicedHashes, responseTime) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(RESPONSETIME_COLLECTION);
@@ -126,7 +93,7 @@ class MongoStorage extends Storage {
         }
     }
 
-    async updateProviderResponseTime(timeSlicedHashes, responseTime) {
+    async updateProviderTimeseriesResponseTime(timeSlicedHashes, responseTime) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(`${PROVIDER_RESPONSETIME_COLLECTION}`);
@@ -191,7 +158,7 @@ class MongoStorage extends Storage {
 
     // ============= Получение =============
 
-    async getTimeseriesCounterData(hash, limit = null, offset = 0) {
+    async getTimeseriesHits(hash, limit = null, offset = 0) {
         const stats = await this.client
             .db(this.config.dbName)
             .collection(COUNTER_COLLECTION)
@@ -205,7 +172,7 @@ class MongoStorage extends Storage {
         return stats;
     }
 
-    async getResponseTimesData(hash, limit = null, offset = 0) {
+    async getTimeseriesResponseTime(hash, limit = null, offset = 0) {
         const stats = await this.client
             .db(this.config.dbName)
             .collection(RESPONSETIME_COLLECTION)
@@ -217,7 +184,7 @@ class MongoStorage extends Storage {
             : stats;
     }
 
-    async getProviderResponseTimesData(provider, hash) {
+    async getProviderTimeseriesResponseTime(provider, hash) {
         const stats = await this.client
             .db(this.config.dbName)
             .collection(PROVIDER_RESPONSETIME_COLLECTION)
@@ -263,16 +230,16 @@ class MongoStorage extends Storage {
         await this.safeDelete(PROVIDER_STATS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
 
-    async deleteTimeseriesCounterDataOlderThan(timestamp) {
-        await this.deleteTimestampedDataOlderThan(COUNTER_COLLECTION, timestamp);
+    async deleteTimeseriesHitsOlderThan(timestamp) {
+        await this.deleteTimeseriesOlderThan(COUNTER_COLLECTION, timestamp);
     };
 
-    async deleteResponsetimeDataOlderThan(timestamp) {
-        await this.deleteTimestampedDataOlderThan(RESPONSETIME_COLLECTION, timestamp);
+    async deleteTimeseriesResponseTimeOlderThan(timestamp) {
+        await this.deleteTimeseriesOlderThan(RESPONSETIME_COLLECTION, timestamp);
     };
 
-    async deleteProviderResponsetimeDataOlderThan(timestamp) {
-        await this.deleteTimestampedDataOlderThan(PROVIDER_RESPONSETIME_COLLECTION, timestamp);
+    async deleteProviderTimeseriesResponseTimeOlderThan(timestamp) {
+        await this.deleteTimeseriesOlderThan(PROVIDER_RESPONSETIME_COLLECTION, timestamp);
     };
 
     /**
@@ -301,7 +268,7 @@ class MongoStorage extends Storage {
      * @param timestamp
      * @returns {Promise<void>}
      */
-    async deleteTimestampedDataOlderThan(collectionName, timestamp) {
+    async deleteTimeseriesOlderThan(collectionName, timestamp) {
         const timeLimit = moment.unix(timestamp),
             timeSlicesToDelete = {};
 
@@ -333,6 +300,40 @@ class MongoStorage extends Storage {
                 );
             logger.info(`[STATS][STORAGE][MONGO] ${count} old records have been deleted from ${collectionName}`);
         }
+    }
+
+    /**
+     * Запрашивает среднее значение величин для указанного отрезка времени
+     * @param collection
+     * @param query
+     * @param timeSlice
+     * @param responseTime
+     * @return {Promise<number>}
+     */
+    async getAvgForTimeSlice(collection, query, timeSlice, responseTime) {
+        const options = {projection: {}};
+        options.projection[timeSlice] = 1;
+        const responseTimeForTimeSlice = await collection.findOne(query, options);
+
+        let updatedAverageResponseTime = responseTime;
+        if (responseTimeForTimeSlice !== null && responseTimeForTimeSlice[timeSlice]) {
+            const {hits, averageResponseTime} = responseTimeForTimeSlice[timeSlice];
+            return this.updateAverage(hits, averageResponseTime, responseTime);
+        }
+        return updatedAverageResponseTime;
+    }
+
+    /**
+     *  Пересчитывает значение среднего при добавлении нового элемента
+     *  ( n * a + v ) / n + 1;
+     * @param currentCount
+     * @param currentAverage
+     * @param updateWithValue
+     * @return {number}
+     */
+    updateAverage(currentCount, currentAverage, updateWithValue) {
+        const n = currentCount + 1; // new count
+        return (n * currentAverage + updateWithValue) / (n + 1);
     }
 }
 

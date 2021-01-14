@@ -73,7 +73,7 @@ class StatsUpdater {
             timeSlicedHashes.set(precisionModule.getTimeSliceStart(precisionInSeconds), `${keyName}:${precisionInSeconds}`);
         });
 
-        return this._storage.updateTimeseriesCounter(timeSlicedHashes);
+        return this._storage.updateTimeseriesHits(timeSlicedHashes);
     }
 
     /**
@@ -94,7 +94,7 @@ class StatsUpdater {
             const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
             timeSlicedHashes.set(`${keyName}:${precisionInSeconds}`, precisionModule.getTimeSliceStart(precisionInSeconds));
         });
-        return this._storage.updateAPIResponseTime(timeSlicedHashes, responseTime);
+        return this._storage.updateTimeseriesResponseTime(timeSlicedHashes, responseTime);
     }
 
     /**
@@ -115,7 +115,7 @@ class StatsUpdater {
             const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
             timeSlicedHashes.set(`${provider}:${keyName}:${precisionInSeconds}`, precisionModule.getTimeSliceStart(precisionInSeconds));
         });
-        return this._storage.updateProviderResponseTime(timeSlicedHashes, responseTime);
+        return this._storage.updateProviderTimeseriesResponseTime(timeSlicedHashes, responseTime);
     }
 }
 

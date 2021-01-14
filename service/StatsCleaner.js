@@ -13,21 +13,21 @@ class StatsCleaner {
         this._env = value;
     }
 
-    flushOldAggregateData() {
+    flushOldTotals() {
         const timestamp = moment().subtract(...statsConfig.totalHitsTTL.split(' ')).unix();
         this._storage.safeDeleteTotalHitsOlderThan(timestamp);
         this._storage.safeDeleteProviderTotalHitsOlderThan(timestamp);
     }
 
-    flushOldTimeseriesData() {
+    flushOldTimeseries() {
         const timestamp = moment().subtract(moment.duration(...statsConfig.timeseriesCounterTTL.split(' '))).unix();
-        this._storage.deletetimeseriesCounterDataOlderThan(timestamp);
+        this._storage.deleteTimeseriesHitsOlderThan(timestamp);
     }
 
-    flushOldResponsetimeData() {
+    flushOldResponseTime() {
         const timestamp = moment().subtract(moment.duration(...statsConfig.responseTimeTTL.split(' '))).unix();
-        this._storage.deleteResponsetimeDataOlderThan(timestamp);
-        this._storage.deleteProviderResponsetimeDataOlderThan(timestamp);
+        this._storage.deleteTimeseriesResponseTimeOlderThan(timestamp);
+        this._storage.deleteProviderTimeseriesResponseTimeOlderThan(timestamp);
     }
 }
 

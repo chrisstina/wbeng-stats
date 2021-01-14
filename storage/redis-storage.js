@@ -20,7 +20,7 @@ class RedisStorage extends Storage {
         });
     }
 
-    async updateTimeseriesCounter(timeSlicedHashes, updateBy = 1) {
+    async updateTimeseriesHits(timeSlicedHashes, updateBy = 1) {
 
         const pipe = this.client.multi(); // открываем транзакцию
 
@@ -44,7 +44,7 @@ class RedisStorage extends Storage {
         });
     };
 
-    async updateOperationTotals(operation, hashesToUpdate, updateBy = 1) {
+    async updateTotalHits(operation, hashesToUpdate, updateBy = 1) {
         const pipe = this.client.multi(); // открываем транзакцию
 
         for (const hash of hashesToUpdate) {
@@ -67,11 +67,11 @@ class RedisStorage extends Storage {
         });
     };
 
-    async updateProviderOperationTotals(provider, operation, hashesToUpdate, updateBy = 1) {
+    async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {
         throw new Error('Not implemented');
     }
 
-    async getTimeseriesCounterData(hash, limit = null, offset = 0) {
+    async getTimeseriesHits(hash, limit = null, offset = 0) {
         const retrieveDataAsync = promisify(this.client.hgetall).bind(this.client);
         try {
             return await retrieveDataAsync(`count:${hash}`);
@@ -80,7 +80,7 @@ class RedisStorage extends Storage {
         }
     };
 
-    async getOperationTotalsData(hash) {
+    async getTotalHits(hash) {
         const retrieveDataAsync = promisify(this.client.hgetall).bind(this.client);
         try {
             return await retrieveDataAsync(`stats:${hash}`);
