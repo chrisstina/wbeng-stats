@@ -66,12 +66,42 @@ const getDefaultValueForPrecision = precision => {
 
 /**
  *
- * @type {{getProviderAPIStats: (function(String, String, (String|null)=, (String|null)=, (String|null)=): {string: string}), getAllowedOperations: (function(): *), getAPIStats: (function(String, (String|null)=, (String|null)=, (String|null)=): {string: string}), getAllowedtimeseriesPrecisions: (function(): *), updateProviderAPICalls: module.exports.updateProviderAPICalls, updateProviderResponseTime: module.exports.updateProviderResponseTime, REQUEST_TYPE_CALL: string, updateAPICalls: module.exports.updateAPICalls, getAPICallsStatsByProvider: (function(String, (String|null)=, (String|null)=): {}), cleanup: (function(): Promise<*>), getAPItimeseries: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}), getAPIResponseTime: (function(*=, *=, *=): {string: {}}), getAllowedStatsPrecisions: (function(): *), getAllowedProfiles: (function(): *), getProviderAPIResponseTime: (function(*=, *=, *=, *=): {string: {averageResponseTime: Number, hits: Number}}), validateStatsDate: module.exports.validateStatsDate, updateAPIResponseTime: module.exports.updateAPIResponseTime, getAPICallsStatsByProfile: (function((String|null)=, (String|null)=): {}), REQUEST_TYPE_ERROR: string, connect: (function(): Promise<void>)}}
+ * @type {{
+ *
+ * REQUEST_TYPE_ERROR: string,
+ * REQUEST_TYPE_CALL: string,
+ *
+ * connect: (function(): Promise<void>)
+ * validateStatsDate: module.exports.validateStatsDate,
+ *
+ * getAllowedOperations: (function(): string[]),
+ * getAllowedTimeseriesPrecisions: (function(): string[]),
+ * getAllowedStatsPrecisions: (function(): string[]),
+ * getAllowedProfiles: (function(): string[]),
+ *
+ * updateAPIStats: module.exports.updateAPIStats,
+ * updateAPIResponseTime: module.exports.updateAPIResponseTime,
+ * updateProviderStats: module.exports.updateProviderStats,
+ * updateProviderResponseTime: module.exports.updateProviderResponseTime,
+ *
+ * getAPITotalHits: (function(String, (String|null)=, (String|null)=, (String|null)=): {string: string}),
+ * getAPITimeseriesHits: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}),
+ * getAPIResponseTime: (function(*=, *=, *=): {string: {}}),
+ * getAPITotalHitsByProvider: (function(String, (String|null)=, (String|null)=): {}),
+ * getAPITotalHitsByProfile: (function((String|null)=, (String|null)=): {}),
+ * getProviderTotalHits: (function(String, String, (String|null)=, (String|null)=, (String|null)=): {string: string}),
+ * getProviderResponseTime: (function(*=, *=, *=, *=): {string: {averageResponseTime: Number, hits: Number}}),
+ *
+ * cleanup: (function(): Promise<*>),
+ * }}
  */
 module.exports = {
     connect: () => {
         return initStorageService(config.get('stats.storage'));
     },
+
+    // ===== Валидация и построение интерфейса =====
+
     /**
      * Список допустимых отрезков времени для получения данных реального времени
      * @return {[]}
@@ -99,12 +129,15 @@ module.exports = {
     validateStatsDate: (precision, value) => {
         validate.checkers[precision](value);
     },
+
+    // ===== Обновление счетчиков  =====
+
     /**
-     * Обновит все счетчики обращений к апи
+     * Обновит все счетчики обращений к апи - timeseries и totals
      * @param {string} type тип записи - request | error
      * @param {{entryPoint: string, profile: string}} expressRequest
      */
-    updateAPICalls: (expressRequest, type = "request") => {
+    updateAPIStats: (expressRequest, type = "request") => {
         logger.verbose(`[STATS][UPD] Update API ${type} stats, ${process.env.NODE_ENV} env`);
 
         assert(expressRequest.entryPoint !== undefined, 'Need entryPoint');
@@ -117,11 +150,11 @@ module.exports = {
 
         updater.incrementTimeseriesHits();// все запросы всех пользователей
         updater.incrementTimeseriesHits(entryPoint); // конкретный тип запроса всех пользователей
-        updater.incrementOperationTotals(entryPoint);
+        updater.incrementTotalHits(entryPoint);
         if (profile) {
             updater.incrementTimeseriesHits(null, profile);  // все запросы пользователя
             updater.incrementTimeseriesHits(entryPoint, profile); // конкретный тип запроса пользователя
-            updater.incrementOperationTotals(entryPoint, profile);
+            updater.incrementTotalHits(entryPoint, profile);
         }
     },
 
@@ -148,7 +181,7 @@ module.exports = {
      * @param {{provider: {name: string, code: string}, profile: string, entryPoint: string, WBtoken: string}} request
      * @param {string|undefined} type тип записи - request | error
      */
-    updateProviderAPICalls: (request, type = "request") => {
+    updateProviderStats: (request, type = "request") => {
         logger.verbose(`[STATS][UPD] Update provider ${type}s stats, ${process.env.NODE_ENV} env`);
         assert(request.provider !== undefined, 'Need provider');
         assert(request.entryPoint !== undefined, 'Need entryPoint');
@@ -157,8 +190,8 @@ module.exports = {
 
         const {provider, entryPoint, profile} = request;
         const updater = new StatsUpdater(storageService, type, precisionFormats);
-        updater.incrementProviderOperationTotals(provider.code, entryPoint);
-        updater.incrementProviderOperationTotals(provider.code, entryPoint, profile);
+        updater.incrementProviderTotalHits(provider.code, entryPoint);
+        updater.incrementProviderTotalHits(provider.code, entryPoint, profile);
     },
     /**
      * Обновит среднее время запроса к конкретному провайдеру за текущий промежуток времени (минута \ 30 секунд)
@@ -178,7 +211,43 @@ module.exports = {
 
         updater.updateProviderResponseTime(responseDuration, entryPoint, provider.code);
     },
+
+    // ===== Чтение счетчиков  =====
+
     /**
+     * Вернет статистику вызовов запросов за указанный промежуток времени.
+     *
+     * Например,
+     * getAPITotalHits("request", "default", "week", 34) // количество всех запросов для профиля default за последнюю неделю
+     * getAPITotalHits("request","default", "day", 19.08.2020) // количество всех запросов для профиля default за 19 августа 2020
+     * getAPITotalHits("request", null, "month") // количество всех запросов за последний месяц
+     * getAPITotalHits("request", null, "month", "Jun.2017") // количество всех запросов за июнь 2017 года
+     * getAPITotalHits("error", null, "month", "Jun.2017") // количество всех ошибок за июнь 2017 года
+     *
+     * @param {String} type request | error
+     * @param {String|null} profile
+     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
+     * @param {String|null}value конкретный отрезок времени.
+     *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
+     *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
+     * @return {Promise<{string: string}>}
+     */
+    getAPITotalHits: async(type, profile = null, precision = null, value = null) => {
+        assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
+
+        precision = precision || defaultStatsPrecision;
+        assert(precision === null || config.get('stats.totalHitsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.totalHitsPrecisions').join(', ')}`);
+
+        value = value || getDefaultValueForPrecision(precision);
+        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
+        const reader = new StatsReader(storageService, type);
+        return await reader.getTotalHits(profile, precision, value);
+    },
+    /**
+     * Получение исторических данных по вызовам методов, общее количество по всем провайдерам
+     *
      * @param {string} type request | error
      * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
      * @param {string|null} entryPoint
@@ -187,7 +256,7 @@ module.exports = {
      * @param offset
      * @return {Promise<{}|null>}
      */
-    getTimeseriesHits: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+    getAPITimeseriesHits: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
@@ -202,16 +271,10 @@ module.exports = {
         return await reader.getTimeseriesHits(precision, entryPoint, profile, limit, offset);
     },
     /**
-     * Вернет статистику по всем запросам за указанный промежуток времени.
+     * Вернет статистику вызовов метода или ошибкам указанного провайдера за указанный промежуток времени.
      *
-     * Например,
-     * getAPIStats("request", "default", "week", 34) // количество всех запросов для профиля default за последнюю неделю
-     * getAPIStats("request","default", "day", 19.08.2020) // количество всех запросов для профиля default за 19 августа 2020
-     * getAPIStats("request", null, "month") // количество всех запросов за последний месяц
-     * getAPIStats("request", null, "month", "Jun.2017") // количество всех запросов за июнь 2017 года
-     * getAPIStats("error", null, "month", "Jun.2017") // количество всех ошибок за июнь 2017 года
-     *
-     * @param {String} type request | error
+     * @param {String} type "request" | "error"
+     * @param {String} provider код провайдера
      * @param {String|null} profile
      * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
      * @param {String|null}value конкретный отрезок времени.
@@ -219,7 +282,7 @@ module.exports = {
      *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
      * @return {Promise<{string: string}>}
      */
-    getAPIStats: async(type, profile = null, precision = null, value = null) => {
+    getProviderTotalHits: async (type, provider, profile = null, precision = null, value = null) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
@@ -228,12 +291,12 @@ module.exports = {
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.totalHitsPrecisions').join(', ')}`);
 
         value = value || getDefaultValueForPrecision(precision);
-        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
+        logger.verbose(`[STATS][VIEW] Retrieve ${provider} API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService, type);
-        return await reader.getTotalHits(profile, precision, value);
+        return await reader.getProviderTotalHits(provider, profile, precision, value);
     },
     /**
-     * Вернет статистику по средней длительности запроса.
+     * Вернет историческую статистику по средней длительности запроса.
      *
      * Например,
      * getAPIResponseTime('flights') - среднее время запроса поиска в минуту
@@ -253,45 +316,20 @@ module.exports = {
         return await reader.getTimeseriesResponseTime(entryPoint, precision);
     },
     /**
-     *
+     * Вернет историческую статистику по средней длительности запроса для конкретного провайдера
      * @param provider
      * @param entryPoint
      * @param precision
      * @param profile
      * @returns {Promise<{string: {averageResponseTime: Number, hits: Number}}>}
      */
-    getProviderAPIResponseTime: async (provider, entryPoint, precision = null, profile = null) => {
+    getProviderResponseTime: async (provider, entryPoint, precision = null, profile = null) => {
         precision = precision || defaultResponsetimePrecision;
         assert(precision === null || config.get('stats.responseTimePrecisions').indexOf(precision) !== -1,
             `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.responseTimePrecisions').join(', ')}`);
         logger.verbose(`[STATS][VIEW] Retrieve provider response times for the ${entryPoint} operation by ${precision} across ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService);
         return await reader.getProviderTimeseriesResponseTime(provider, entryPoint, precision);
-    },
-    /**
-     * Вернет статистику по всем запросам или ошибкам указанного провайдера за указанный промежуток времени.
-     *
-     * @param {String} type "request" | "error"
-     * @param {String} provider код провайдера
-     * @param {String|null} profile
-     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
-     * @param {String|null}value конкретный отрезок времени.
-     *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
-     *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
-     * @return {Promise<{string: string}>}
-     */
-    getProviderAPIStats: async (type, provider, profile = null, precision = null, value = null) => {
-        assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
-        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
-
-        precision = precision || defaultStatsPrecision;
-        assert(precision === null || config.get('stats.totalHitsPrecisions').indexOf(precision) !== -1,
-            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.totalHitsPrecisions').join(', ')}`);
-
-        value = value || getDefaultValueForPrecision(precision);
-        logger.verbose(`[STATS][VIEW] Retrieve ${provider} API calls stats for the ${value || 'last'} ${precision}, ${profile || 'all profiles'}`);
-        const reader = new StatsReader(storageService, type);
-        return await reader.getProviderTotalHits(provider, profile, precision, value);
     },
     /**
      * Вернет таблицу данных по всем операциям для каждого профайла.
@@ -308,7 +346,7 @@ module.exports = {
      *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
      * @return {Promise<{string: {}}>}
      */
-    getAPICallsStatsByProfile: async(precision = null, value = null) => {
+    getAPITotalHitsByProfile: async(precision = null, value = null) => {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
@@ -343,7 +381,7 @@ module.exports = {
      *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
      * @return {Promise<{string: {}}>}
      */
-    getAPICallsStatsByProvider: async(profile, precision = null, value = null) => {
+    getAPITotalHitsByProvider: async(profile, precision = null, value = null) => {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
@@ -362,6 +400,9 @@ module.exports = {
 
         return table;
     },
+
+    // ===== Очищение старых данных ====
+
     /**
      *
      * @return {Promise<*>}

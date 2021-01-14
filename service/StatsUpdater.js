@@ -31,7 +31,7 @@ class StatsUpdater {
      * @param entryPoint название операции
      * @param {string|null} profile
      */
-    incrementOperationTotals(entryPoint = null, profile = null) {
+    incrementTotalHits(entryPoint = null, profile = null) {
         const keyName = keyModule.generateStatsName(this._type, profile);
         const hashes = statsConfig.get('totalHitsPrecisions').map(precision => {
             const formattedDate = moment().format(precisionModule.precisionFormats.get(precision));
@@ -46,7 +46,7 @@ class StatsUpdater {
      * @param entryPoint
      * @param profile
      */
-    incrementProviderOperationTotals(providerCode, entryPoint, profile = null) {
+    incrementProviderTotalHits(providerCode, entryPoint, profile = null) {
         const keyName = keyModule.generateStatsName(this._type, profile);
         const hashes = statsConfig.get('totalHitsPrecisions').map(precision => {
             const formattedDate = moment().format(precisionModule.precisionFormats.get(precision));
