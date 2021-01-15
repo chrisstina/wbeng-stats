@@ -22,7 +22,7 @@ module.exports = {
     totalHitsTTL: "3 months",  // сколько храним данные по итоговой статистике запросами
     precisionFormats: [
         "Y:MM:DD", // 2020:01:09
-        "Y:[W]ww", // 2020:W45
+        "Y:[W]WW", // 2020:W45
         "Y:MM", // 01:2020
         "Y", // 2020
         "Y:MM:DD:HH:mm", // 2020:01:09:00:30
