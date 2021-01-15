@@ -61,7 +61,7 @@ class MongoStorage extends Storage {
      */
     async updateTimeseriesHits(timeSlicedHashes, updateBy = 1) {
         try {
-            const database = this.client.db("wbeng-stats");
+            const database = this.client.db(this.config.dbName);
             const collection = database.collection(COUNTER_COLLECTION);
 
             for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
