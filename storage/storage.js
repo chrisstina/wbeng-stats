@@ -62,6 +62,16 @@ class Storage {
     async getTimeseriesHits(hash, limit = null, offset = 0) {}
 
     /**
+     * Возвращает разбивку событий по временным промежуткам для конкретного провайдера
+     * @param {String} provider код провайдера
+     * @param {String} hash
+     * @param limit
+     * @param offset
+     * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
+     */
+    async getProviderTimeseriesHits(provider, hash, limit = 0, offset = 0) {}
+
+    /**
      * Возвращает среднее время ответа по временным промежуткам
      * @param {String} hash
      * @return {Promise<{string: {}}>} {<timeslice1>: {averageResponseTime: <float>, hits: <number>}, {averageResponseTime: <float>, hits: <number>}}

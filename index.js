@@ -90,6 +90,7 @@ const getDefaultValueForPrecision = precision => {
  * getAPITotalHitsByProvider: (function(String, (String|null)=, (String|null)=): {}),
  * getAPITotalHitsByProfile: (function((String|null)=, (String|null)=): {}),
  * getProviderTotalHits: (function(String, String, (String|null)=, (String|null)=, (String|null)=): {string: string}),
+ * getProviderTimeseriesHits: (function(string=, (string|null)=, (string|null)=, (string|null)=, *=, *=): {string: string}),
  * getProviderResponseTime: (function(*=, *=, *=, *=): {string: {averageResponseTime: Number, hits: Number}}),
  *
  * cleanup: (function(): Promise<*>),
@@ -276,6 +277,32 @@ module.exports = {
         logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService, type);
         return await reader.getTimeseriesHits(precision, entryPoint, profile, limit, offset);
+    },
+    /**
+     * Получение исторических данных по вызовам методов, общее количество по всем провайдерам
+     *
+     * @param {string} type request | error
+     * @param {String} provider код провайдера
+     * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
+     * @param {string|null} entryPoint
+     * @param {string|null} profile
+     * @param limit
+     * @param offset
+     * @return {Promise<{}|null>}
+     */
+    getProviderTimeseriesHits: async (type = 'request', provider, precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+        assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
+
+        precision = precision || defaultTimeseriesPrecision;
+
+        if (config.get('stats.timeseriesPrecisions').indexOf(precision) === -1) {
+            precision = defaultTimeseriesPrecision;
+            logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
+        }
+        logger.verbose(`[STATS][VIEW] Retrieve provider ${provider} calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
+        const reader = new StatsReader(storageService, type);
+        return await reader.getProviderTimeseriesHits(provider, precision, entryPoint, profile, limit, offset);
     },
     /**
      * Вернет статистику вызовов метода или ошибкам указанного провайдера за указанный промежуток времени.

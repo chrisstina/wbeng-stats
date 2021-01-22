@@ -151,17 +151,11 @@ class MongoStorage extends Storage {
     // ============= Получение =============
 
     async getTimeseriesHits(hash, limit = null, offset = 0) {
-        const stats = await this.client
-            .db(this.config.dbName)
-            .collection(COUNTER_COLLECTION)
-            .findOne(
-                new SearchFilter({key: hash}),
-                {projection: defaultProjection});
+        return this.getTimeseries(COUNTER_COLLECTION, hash);
+    }
 
-        if (stats === null) {
-            return {};
-        }
-        return stats;
+    async getProviderTimeseriesHits(provider, hash, limit = null, offset = 0) {
+        return this.getTimeseries(PROVIDER_COUNTER_COLLECTION, `${provider}${HASH_DELIMITER}${hash}`);
     }
 
     async getTimeseriesResponseTime(hash, limit = null, offset = 0) {
@@ -256,6 +250,26 @@ class MongoStorage extends Storage {
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }
+    }
+
+    /**
+     *
+     * @param collection
+     * @param hash
+     * @returns {Promise<*|{}>}
+     */
+    async getTimeseries(collection, hash) {
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(collection)
+            .findOne(
+                new SearchFilter({key: hash}),
+                {projection: defaultProjection});
+
+        if (stats === null) {
+            return {};
+        }
+        return stats;
     }
 
     /**
