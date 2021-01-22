@@ -78,6 +78,28 @@ class StatsUpdater {
 
     /**
      *
+     * @param providerCode
+     * @param entryPoint
+     * @param profile
+     * @returns {Promise<*>}
+     */
+    incrementProviderTimeseriesHits(providerCode, entryPoint = null, profile = null) {
+        const keyName = generateCounterName(this._type, entryPoint, profile);
+        /**
+         *
+         * @type {Map<Number, String>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
+         */
+        const timeSlicedHashes = new Map();
+        statsConfig.get('timeseriesPrecisions').forEach(precision => {
+            const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
+            timeSlicedHashes.set(precisionModule.getTimeSliceStart(precisionInSeconds), `${providerCode}${HASH_DELIMITER}${keyName}${HASH_DELIMITER}${precisionInSeconds}`);
+        });
+
+        return this._storage.updateProviderTimeseriesHits(timeSlicedHashes);
+    }
+
+    /**
+     *
      * @param responseTime
      * @param entryPoint
      * @param {string|null} provider

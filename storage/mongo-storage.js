@@ -7,6 +7,7 @@ const COUNTER_COLLECTION = 'timeseries_hits';
 const STATS_COLLECTION = 'total_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_STATS_COLLECTION = 'provider_total_hits';
+const PROVIDER_COUNTER_COLLECTION = 'provider_timeseries_hits';
 const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime';
 
 const HASH_DELIMITER = ':';
@@ -60,20 +61,11 @@ class MongoStorage extends Storage {
      * @param updateBy
      */
     async updateTimeseriesHits(timeSlicedHashes, updateBy = 1) {
-        try {
-            const database = this.client.db(this.config.dbName);
-            const collection = database.collection(COUNTER_COLLECTION);
+        await this.updateTimeseries(COUNTER_COLLECTION, timeSlicedHashes, updateBy);
+    }
 
-            for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
-                let updateDoc = {
-                    $inc: {}
-                };
-                updateDoc.$inc[`${timeSlice}`] = updateBy;
-                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
-            }
-        } catch (e) {
-            logger.error('[STATS][STORAGE][MONGO]' + e.stack);
-        }
+    async updateProviderTimeseriesHits(timeSlicedHashes, updateBy = 1) {
+        await this.updateTimeseries(PROVIDER_COUNTER_COLLECTION, timeSlicedHashes, updateBy);
     }
 
     async updateTimeseriesResponseTime(timeSlicedHashes, responseTime) {
@@ -241,6 +233,30 @@ class MongoStorage extends Storage {
     async deleteProviderTimeseriesResponseTimeOlderThan(timestamp) {
         await this.deleteTimeseriesOlderThan(PROVIDER_RESPONSETIME_COLLECTION, timestamp);
     };
+
+    /**
+     *
+     * @param collectionName
+     * @param timeSlicedHashes
+     * @param updateBy
+     * @returns {Promise<void>}
+     */
+    async updateTimeseries(collectionName, timeSlicedHashes, updateBy = 1) {
+        try {
+            const database = this.client.db(this.config.dbName);
+            const collection = database.collection(collectionName);
+
+            for (const [timeSlice, hash] of timeSlicedHashes.entries()) {
+                let updateDoc = {
+                    $inc: {}
+                };
+                updateDoc.$inc[`${timeSlice}`] = updateBy;
+                await collection.updateOne({key: hash}, updateDoc, {upsert: true});
+            }
+        } catch (e) {
+            logger.error('[STATS][STORAGE][MONGO]' + e.stack);
+        }
+    }
 
     /**
      *

@@ -192,6 +192,13 @@ module.exports = {
         const updater = new StatsUpdater(storageService, type, precisionFormats);
         updater.incrementProviderTotalHits(provider.code, entryPoint);
         updater.incrementProviderTotalHits(provider.code, entryPoint, profile);
+
+        updater.incrementProviderTimeseriesHits(provider.code); // все запросы всех пользователей
+        updater.incrementProviderTimeseriesHits(provider.code, entryPoint); //  конкретный тип запроса всех пользователей
+        if (profile) {
+            updater.incrementProviderTimeseriesHits(provider.code, null, profile); // все запросы конкретного пользователя
+            updater.incrementProviderTimeseriesHits(provider.code, entryPoint, profile); //  конкретный тип запроса конкретного пользователя
+        }
     },
     /**
      * Обновит среднее время запроса к конкретному провайдеру за текущий промежуток времени (минута \ 30 секунд)

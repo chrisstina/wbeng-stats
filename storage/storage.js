@@ -3,11 +3,19 @@ class Storage {
 
     /**
      *
-     * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например 3600:flights:apirequests:all
+     * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:ticket:allprofiles:3600
      * @param updateBy
      * @return {Promise<void>}
      */
     async updateTimeseriesHits(timeSlicedHashes, updateBy = 1) {}
+
+    /**
+     *
+     * @param timeSlicedHashes timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (гачало текущего часа, минуты, и т.п), а значение - название ключа, например KW:apirequests:ticket:allprofiles:3600
+     * @param updateBy
+     * @returns {Promise<void>}
+     */
+    async updateProviderTimeseriesHits(timeSlicedHashes, updateBy = 1) {}
 
     /**
      * Обновляет среднюю длительность запроса операции по временным отрезкам
