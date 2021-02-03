@@ -1,4 +1,5 @@
-const keyModule = require('./statsKey'),
+const moment = require('moment');
+const {generateStatsName, generateCounterName, generateResponseTimeName, HASH_DELIMITER} = require('./statsKey'),
     precisionModule = require('./precision');
 
 class StatsReader {
@@ -15,13 +16,14 @@ class StatsReader {
     /**
      * Получение количества вызовов каждой операции за указанный период времени, общее количество по всем провайдерам
      *
-     * @param profile
-     * @param precision
-     * @param value
+     * @param {String} profile
+     * @param {"second"|"minute"|"day"|"week"|"month"|"year"|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
+     * @param {String} value дата в формате moment
      * @return {Promise<{string: string}>} {<operationName>: hits, <ioerationName2>: hits}
      */
     async getTotalHits(profile, precision, value) {
-        return this._storage.getTotalHits(`${keyModule.generateStatsName(this._type, profile)}:${precisionModule.valueToDate(precision, value)}`);
+        const key = `${generateStatsName(this._type, profile)}${HASH_DELIMITER}${precisionModule.valueToDate(precision, value)}`;
+        return this._storage.getTotalHits(key);
     };
 
     /**
@@ -34,7 +36,7 @@ class StatsReader {
      * @return {Promise<{string: string}>} {<operationName>: hits, <operationName2>: hits}
      */
     async getProviderTotalHits(provider, profile, precision, value) {
-        return this._storage.getProviderTotalHits(provider, `${keyModule.generateStatsName(this._type, profile)}:${precisionModule.valueToDate(precision, value)}`);
+        return this._storage.getProviderTotalHits(provider, `${generateStatsName(this._type, profile)}:${precisionModule.valueToDate(precision, value)}`);
     };
 
     /**
@@ -48,7 +50,14 @@ class StatsReader {
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
     async getTimeseriesHits(precision, entryPoint = null, profile = null, limit = null, offset = 0) {
-        return this._storage.getTimeseriesHits(`${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+        const keyPart = `${generateStatsName(this._type, profile)}${HASH_DELIMITER}`;
+
+        // сформируем список ключей - в выбранном масштабе от текущего момента limit записей
+        const keys = precisionModule
+            .getPreviousTimestampsForPrecision(precision, limit)
+            .map(timestamp => keyPart + moment(timestamp).format(precisionModule.precisionFormats.get(precision)))
+
+        return this._storage.getTimeseriesHits(keys, entryPoint);
     };
 
     /**

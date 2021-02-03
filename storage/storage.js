@@ -54,12 +54,11 @@ class Storage {
 
     /**
      * Возвращает разбивку событий по временным промежуткам
-     * @param {String} hash
-     * @param limit
-     * @param offset
+     * @param {String[]} hashes
+     * @param {String|null} operation
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getTimeseriesHits(hash, limit = null, offset = 0) {}
+    async getTimeseriesHits(hashes, operation = null) {}
 
     /**
      * Возвращает разбивку событий по временным промежуткам для конкретного провайдера

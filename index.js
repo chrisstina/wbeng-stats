@@ -257,24 +257,21 @@ module.exports = {
      * Получение исторических данных по вызовам методов, общее количество по всем провайдерам
      *
      * @param {string} type request | error
-     * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
+     * @param {"second"|"minute"|"day"|"week"|"month"|"year"|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
      * @param {string|null} entryPoint
      * @param {string|null} profile
      * @param limit
      * @param offset
      * @return {Promise<{}|null>}
      */
-    getAPITimeseriesHits: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+    getAPITimeseriesHits: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = 10, offset = 0) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
-        precision = precision || defaultTimeseriesPrecision;
+        precision = precision || defaultStatsPrecision;
 
-        if (config.get('stats.timeseriesPrecisions').indexOf(precision) === -1) {
-            precision = defaultTimeseriesPrecision;
-            logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
-        }
-        logger.verbose(`[STATS][VIEW] Retrieve API calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
+        assert(config.get('stats.totalHitsPrecisions').indexOf(precision) !== -1, `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.totalHitsPrecisions').join(', ')}`);
+        logger.verbose(`[STATS][VIEW] Retrieve API calls timeseries by ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService, type);
         return await reader.getTimeseriesHits(precision, entryPoint, profile, limit, offset);
     },

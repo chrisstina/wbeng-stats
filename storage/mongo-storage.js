@@ -4,13 +4,13 @@ const moment = require('moment');
 const logger = require('./../logger');
 
 const COUNTER_COLLECTION = 'timeseries_hits';
-const STATS_COLLECTION = 'total_hits';
+const TOTALS_COLLECTION = 'total_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
-const PROVIDER_STATS_COLLECTION = 'provider_total_hits';
+const PROVIDER_TOTALS_COLLECTION = 'provider_total_hits';
 const PROVIDER_COUNTER_COLLECTION = 'provider_timeseries_hits';
 const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime';
 
-const HASH_DELIMITER = ':';
+const {HASH_DELIMITER} = require('./../service/statsKey');
 
 const Storage = require('./storage');
 
@@ -113,7 +113,7 @@ class MongoStorage extends Storage {
     async updateTotalHits(operation, hashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
-            const collection = database.collection(STATS_COLLECTION);
+            const collection = database.collection(TOTALS_COLLECTION);
 
             let updateDoc = {
                 $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
@@ -132,7 +132,7 @@ class MongoStorage extends Storage {
     async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
-            const collection = database.collection(`${PROVIDER_STATS_COLLECTION}`);
+            const collection = database.collection(`${PROVIDER_TOTALS_COLLECTION}`);
 
             let updateDoc = {
                 $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
@@ -150,8 +150,24 @@ class MongoStorage extends Storage {
 
     // ============= Получение =============
 
-    async getTimeseriesHits(hash, limit = null, offset = 0) {
-        return this.getTimeseries(COUNTER_COLLECTION, hash);
+    async getTimeseriesHits(hashes, operation) {
+        const operationsProjection = {key:1};
+        if (operation) {
+            operationsProjection[operation] = 1;
+        }
+
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(TOTALS_COLLECTION)
+            .find(
+                new SearchFilter({key: {$in: hashes}}),
+                {projection: defaultProjection})
+            .project(operationsProjection)
+
+        if (stats === null) {
+            return {};
+        }
+        return stats.toArray();
     }
 
     async getProviderTimeseriesHits(provider, hash, limit = null, offset = 0) {
@@ -185,7 +201,7 @@ class MongoStorage extends Storage {
     async getTotalHits(hash) {
         const stats = await this.client
             .db(this.config.dbName)
-            .collection(STATS_COLLECTION)
+            .collection(TOTALS_COLLECTION)
             .findOne(
                 new SearchFilter({key: hash}),
                 {projection: defaultProjection});
@@ -197,7 +213,7 @@ class MongoStorage extends Storage {
     async getProviderTotalHits(provider, hash) {
         const stats = await this.client
             .db(this.config.dbName)
-            .collection(PROVIDER_STATS_COLLECTION)
+            .collection(PROVIDER_TOTALS_COLLECTION)
             .findOne(
                 new SearchFilter({key: `${provider}${HASH_DELIMITER}${hash}`}),
                 {projection: defaultProjection});
@@ -209,11 +225,11 @@ class MongoStorage extends Storage {
     // ============= Удаление =============
 
     async safeDeleteTotalHitsOlderThan(timestamp) {
-        await this.safeDelete(STATS_COLLECTION, {createdAt: {$lt: timestamp}});
+        await this.safeDelete(TOTALS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
 
     async safeDeleteProviderTotalHitsOlderThan(timestamp) {
-        await this.safeDelete(PROVIDER_STATS_COLLECTION, {createdAt: {$lt: timestamp}});
+        await this.safeDelete(PROVIDER_TOTALS_COLLECTION, {createdAt: {$lt: timestamp}});
     }
 
     async deleteTimeseriesHitsOlderThan(timestamp) {

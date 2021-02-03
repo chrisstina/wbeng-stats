@@ -35,6 +35,23 @@ const precisionsInSeconds = new Map();
         precisionsInSeconds.set(precision, getPrecisionInSeconds(precision));
 });
 
+/**
+ * Генерирует <limit> предыдущих значений timestamp с периодом duration
+ * @param {Moment} timestamp
+ * @param {Duration} duration
+ * @param {Number} limit
+ * @param {Moment[]} timestampStack
+ * @return {Moment[]}
+ */
+const subtractDuration = function (timestamp, duration, limit, timestampStack = []) {
+    if (timestampStack.length === limit) {
+        return timestampStack;
+    } else {
+        const prevTimestamp = moment(timestamp).subtract(duration);
+        return subtractDuration(prevTimestamp, duration, limit, [...timestampStack, prevTimestamp]);
+    }
+}
+
 module.exports = {
     /**
      * получаем начало текущего временного отрезка в timestamp
@@ -43,6 +60,20 @@ module.exports = {
      */
     getTimeSliceStart: precisionInSeconds => parseInt(moment().unix() / precisionInSeconds) * precisionInSeconds,
 
+    /**
+     * Генерирует указанное количество предыдущих значений timestamp с периодом duration
+     * @param {"second"|"minute"|"day"|"week"|"month"|"year"} precision - precision название отрезка времени
+     * @param {Number|null} limit - сколько значений нужно сгенерировать
+     * @param {Number|null} offset
+     * @throws Error
+     * @return {(Moment)[]}
+     */
+    getPreviousTimestampsForPrecision: (precision, limit = 10, offset = 0) => {
+        const step = 1;
+        const duration = moment.duration(step, precision);
+        assert(duration.isValid(), 'Некорректное значение масштаба по времени');
+        return [moment(), ...subtractDuration(moment(), duration, limit)];
+    },
     /**
      * Нормализует полученное значение value и приводит его к нужной дате.
      *
