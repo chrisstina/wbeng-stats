@@ -172,7 +172,7 @@ class MongoStorage extends Storage {
             .find(
                 new SearchFilter({key: {$in: hashes}}),
                 {projection: defaultProjection})
-            .project({})
+            .project(operationsProjection)
 
         if (stats === null) {
             return {};
@@ -180,27 +180,13 @@ class MongoStorage extends Storage {
 
         for await (const doc of stats) {
             if (doc.startSliceTimestamp) {
-                const operationTotal = operation
+                timestampedResults[doc.startSliceTimestamp] = operation
                     ? doc[operation]
-                    : this.sumUpOperations(doc)
-                timestampedResults[doc.startSliceTimestamp] = operationTotal;
+                    : this.sumUpOperations(doc);
             }
         }
 
         return timestampedResults;
-    }
-
-    /**
-     * Для записи в коллекции просуммирует все значения полей с названиями операций
-     * @param key
-     * @param startSliceTimestamp
-     * @param _id
-     * @param createdAt
-     * @param {{}} operations
-     * @return {Number}
-     */
-    sumUpOperations({key, startSliceTimestamp, _id, createdAt, ...operations}) {
-        return Object.values(operations).reduce((total, current) => total + current, 0);
     }
 
     async getProviderTimeseriesHits(provider, hash, limit = null, offset = 0) {
@@ -283,6 +269,7 @@ class MongoStorage extends Storage {
      * @param timeSlicedHashes
      * @param updateBy
      * @returns {Promise<void>}
+     * @deprecated
      */
     async updateTimeseries(collectionName, timeSlicedHashes, updateBy = 1) {
         try {
@@ -306,6 +293,7 @@ class MongoStorage extends Storage {
      * @param collection
      * @param hash
      * @returns {Promise<*|{}>}
+     * @deprecated
      */
     async getTimeseries(collection, hash) {
         const stats = await this.client
@@ -319,6 +307,19 @@ class MongoStorage extends Storage {
             return {};
         }
         return stats;
+    }
+
+    /**
+     * Для записи в коллекции просуммирует все значения полей с названиями операций
+     * @param key
+     * @param startSliceTimestamp
+     * @param _id
+     * @param createdAt
+     * @param {{}} operations
+     * @return {Number}
+     */
+    sumUpOperations({key, startSliceTimestamp, _id, createdAt, ...operations}) {
+        return Object.values(operations).reduce((total, current) => total + current, 0);
     }
 
     /**
