@@ -60,11 +60,19 @@ class MongoStorage extends Storage {
      *
      * @param timeSlicedHashes {Map<string, number>} где ключ - это timestamp начала отрезка времени (начало текущего часа, минуты, и т.п), а значение - название ключа, например apirequests:allmethods:allprofiles3600
      * @param updateBy
+     * @deprecated
      */
     async updateTimeseriesHits(timeSlicedHashes, updateBy = 1) {
         await this.updateTimeseries(COUNTER_COLLECTION, timeSlicedHashes, updateBy);
     }
 
+    /**
+     *
+     * @param timeSlicedHashes
+     * @param updateBy
+     * @return {Promise<void>}
+     * @deprecated
+     */
     async updateProviderTimeseriesHits(timeSlicedHashes, updateBy = 1) {
         await this.updateTimeseries(PROVIDER_COUNTER_COLLECTION, timeSlicedHashes, updateBy);
     }
@@ -117,18 +125,11 @@ class MongoStorage extends Storage {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(TOTALS_COLLECTION);
 
-            let updateDoc = {
-                $setOnInsert: {
-                    createdAt: Math.floor(Date.now() / 1000),
-                },
-                $inc: {},
-                $set: {timeSliceTimestamp: 0} // timestamp начала временного отрезка для данного масштаба (начало часа, начало минуты и т.п.)
-            };
+            let updateDoc = this.createUpdateDocForTotalHits(operation, updateBy);
 
             for (const hash of hashesToUpdate) {
                 assert( ! Number.isNaN(timeSlicedHashesToUpdate.get(hash)));
                 updateDoc.$set.startSliceTimestamp = timeSlicedHashesToUpdate.get(hash);
-                updateDoc.$inc[operation] = updateBy;
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
             }
         } catch (e) {
@@ -136,18 +137,25 @@ class MongoStorage extends Storage {
         }
     }
 
-    async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {
+    /**
+     * Обновляет статистику запросов по провайдерам на операцию по временным отрезкам.
+     * @param {string} provider
+     * @param {string} operation
+     * @param {string[]} hashesToUpdate
+     * @param {Map<string, number>} timeSlicedHashesToUpdate
+     * @param {number} updateBy
+     * @return {Promise<void>}
+     */
+    async updateProviderTotalHits(provider, operation, hashesToUpdate, timeSlicedHashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(`${PROVIDER_TOTALS_COLLECTION}`);
 
-            let updateDoc = {
-                $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
-                $inc: {}
-            };
-            updateDoc.$inc[operation] = updateBy;
+            let updateDoc = this.createUpdateDocForTotalHits(operation, updateBy);
 
             for (const hash of hashesToUpdate) {
+                assert( ! Number.isNaN(timeSlicedHashesToUpdate.get(hash)));
+                updateDoc.$set.startSliceTimestamp = timeSlicedHashesToUpdate.get(hash);
                 await collection.updateOne({key: `${provider}${HASH_DELIMITER}${hash}`}, updateDoc, {upsert: true});
             }
         } catch (e) {
@@ -307,6 +315,18 @@ class MongoStorage extends Storage {
             return {};
         }
         return stats;
+    }
+
+    createUpdateDocForTotalHits(operation, updateBy) {
+        let updateDoc = {
+            $setOnInsert: {
+                createdAt: Math.floor(Date.now() / 1000),
+            },
+            $inc: {},
+            $set: {startSliceTimestamp: 0} // timestamp начала временного отрезка для данного масштаба (начало часа, начало минуты и т.п.)
+        };
+        updateDoc.$inc[operation] = updateBy;
+        return updateDoc;
     }
 
     /**

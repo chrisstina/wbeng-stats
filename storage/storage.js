@@ -48,28 +48,28 @@ class Storage {
      * @param {String} provider код провайдера (1S, 1H, etc)
      * @param {String} operation название API операции (entryPoint)
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
+     * @param {Map} timeSlicedHashesToUpdate - набор значений таймпстэмпов начала временного отрезка
      * @param {Number} updateBy default 1
      * @return {Promise<void>}
      */
-    async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {}
+    async updateProviderTotalHits(provider, operation, hashesToUpdate, timeSlicedHashesToUpdate, updateBy = 1) {}
 
     /**
      * Возвращает разбивку событий по временным промежуткам
-     * @param {String[]} hashes
+     * @param {String[]} hashesToUpdate
      * @param {String|null} operation
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getTimeseriesHits(hashes, operation = null) {}
+    async getTimeseriesHits(hashesToUpdate, operation = null) {}
 
     /**
      * Возвращает разбивку событий по временным промежуткам для конкретного провайдера
      * @param {String} provider код провайдера
-     * @param {String} hash
-     * @param limit
-     * @param offset
+     * @param {String} hashesToUpdate
+     * @param operation
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getProviderTimeseriesHits(provider, hash, limit = 0, offset = 0) {}
+    async getProviderTimeseriesHits(provider, hashesToUpdate, operation) {}
 
     /**
      * Возвращает среднее время ответа по временным промежуткам

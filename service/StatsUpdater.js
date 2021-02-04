@@ -3,7 +3,7 @@ const assert = require('assert'),
     moment = require('moment');
 
 const {generateStatsName, generateCounterName, generateResponseTimeName, HASH_DELIMITER} = require('./statsKey'),
-    precisionModule = require('./precision');
+    {precisionFormats, precisionsInSeconds, getTimeSliceStart, getPreviousTimestampsForPrecision} = require('./precision');
 
 const statsConfig = config.get('stats');
 
@@ -33,26 +33,7 @@ class StatsUpdater {
      * @param {string|null} profile
      */
     incrementTotalHits(entryPoint = null, profile = null) {
-        const keyName = generateStatsName(this._type, profile),
-            /**
-             *
-             * @type {string[]}
-             */
-            hashes = [],
-            /**
-             * @type {Map<string, number>} <key, timestampStart>
-             */
-            timeSlicedHashes = new Map();
-
-        statsConfig.get('totalHitsPrecisions').forEach(precision => {
-            const formattedDate = moment().format(precisionModule.precisionFormats.get(precision)),
-                precisionInSeconds = precisionModule.precisionsInSeconds.get(precision), // переводим в секунды
-                hash = `${keyName}${HASH_DELIMITER}${formattedDate}`;
-            assert(precisionInSeconds !== undefined);
-            timeSlicedHashes.set(hash, precisionModule.getTimeSliceStart(precisionInSeconds));
-            hashes.push(hash);
-        });
-
+        const {hashes, timeSlicedHashes} = this.prepareTotalHitsHashes(profile);
         this._storage.updateTotalHits(entryPoint, hashes, timeSlicedHashes);
     }
 
@@ -63,12 +44,8 @@ class StatsUpdater {
      * @param profile
      */
     incrementProviderTotalHits(providerCode, entryPoint, profile = null) {
-        const keyName = generateStatsName(this._type, profile);
-        const hashes = statsConfig.get('totalHitsPrecisions').map(precision => {
-            const formattedDate = moment().format(precisionModule.precisionFormats.get(precision));
-            return `${keyName}${HASH_DELIMITER}${formattedDate}`;
-        });
-        this._storage.updateProviderTotalHits(providerCode, entryPoint, hashes);
+        const {hashes, timeSlicedHashes} = this.prepareTotalHitsHashes(profile);
+        this._storage.updateProviderTotalHits(providerCode, entryPoint, hashes, timeSlicedHashes);
     };
 
     /**
@@ -76,6 +53,7 @@ class StatsUpdater {
      * @param entryPoint
      * @param profile
      * @return {Promise<*>}
+     * @deprecated
      */
     incrementTimeseriesHits(entryPoint = null, profile = null) {
         const keyName = generateCounterName(this._type, entryPoint, profile);
@@ -85,8 +63,8 @@ class StatsUpdater {
          */
         const timeSlicedHashes = new Map();
         statsConfig.get('timeseriesPrecisions').forEach(precision => {
-            const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
-            timeSlicedHashes.set(precisionModule.getTimeSliceStart(precisionInSeconds), `${keyName}${HASH_DELIMITER}${precisionInSeconds}`);
+            const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
+            timeSlicedHashes.set(getTimeSliceStart(precisionInSeconds), `${keyName}${HASH_DELIMITER}${precisionInSeconds}`);
         });
 
         return this._storage.updateTimeseriesHits(timeSlicedHashes);
@@ -98,6 +76,7 @@ class StatsUpdater {
      * @param entryPoint
      * @param profile
      * @returns {Promise<*>}
+     * @deprecated
      */
     incrementProviderTimeseriesHits(providerCode, entryPoint = null, profile = null) {
         const keyName = generateCounterName(this._type, entryPoint, profile);
@@ -107,8 +86,8 @@ class StatsUpdater {
          */
         const timeSlicedHashes = new Map();
         statsConfig.get('timeseriesPrecisions').forEach(precision => {
-            const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
-            timeSlicedHashes.set(precisionModule.getTimeSliceStart(precisionInSeconds), `${providerCode}${HASH_DELIMITER}${keyName}${HASH_DELIMITER}${precisionInSeconds}`);
+            const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
+            timeSlicedHashes.set(getTimeSliceStart(precisionInSeconds), `${providerCode}${HASH_DELIMITER}${keyName}${HASH_DELIMITER}${precisionInSeconds}`);
         });
 
         return this._storage.updateProviderTimeseriesHits(timeSlicedHashes);
@@ -129,8 +108,8 @@ class StatsUpdater {
          */
         const timeSlicedHashes = new Map();
         statsConfig.get('responseTimePrecisions').forEach(precision => {
-            const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
-            timeSlicedHashes.set(`${keyName}${HASH_DELIMITER}${precisionInSeconds}`, precisionModule.getTimeSliceStart(precisionInSeconds));
+            const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
+            timeSlicedHashes.set(`${keyName}${HASH_DELIMITER}${precisionInSeconds}`, getTimeSliceStart(precisionInSeconds));
         });
         return this._storage.updateTimeseriesResponseTime(timeSlicedHashes, responseTime);
     }
@@ -150,10 +129,43 @@ class StatsUpdater {
          */
         const timeSlicedHashes = new Map();
         statsConfig.get('responseTimePrecisions').forEach(precision => {
-            const precisionInSeconds = precisionModule.precisionsInSeconds.get(precision); // переводим в секунды
-            timeSlicedHashes.set(`${provider}${HASH_DELIMITER}${keyName}${HASH_DELIMITER}${precisionInSeconds}`, precisionModule.getTimeSliceStart(precisionInSeconds));
+            const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
+            timeSlicedHashes.set(`${provider}${HASH_DELIMITER}${keyName}${HASH_DELIMITER}${precisionInSeconds}`, getTimeSliceStart(precisionInSeconds));
         });
         return this._storage.updateProviderTimeseriesResponseTime(timeSlicedHashes, responseTime);
+    }
+
+
+    /**
+     *
+     * @param profile
+     * @return {{hashes: string[], timeSlicedHashes: Map<string, number>}}
+     */
+    prepareTotalHitsHashes(profile = null) {
+        const keyName = generateStatsName(this._type, profile),
+            /**
+             * @type {string[]}
+             */
+            hashes = [],
+            /**
+             * @type {Map<string, number>} <key, timestampStart>
+             */
+            timeSlicedHashes = new Map();
+
+        statsConfig.get('totalHitsPrecisions').forEach(precision => {
+            const formattedDate = moment().format(precisionFormats.get(precision)),
+                hash = `${keyName}${HASH_DELIMITER}${formattedDate}`;
+            hashes.push(hash);
+
+            const precisionInSeconds = precisionsInSeconds.get(precision); // переводим в секунды
+            assert(precisionInSeconds !== undefined);
+            timeSlicedHashes.set(hash, getTimeSliceStart(precisionInSeconds));
+        });
+
+        return {
+            hashes,
+            timeSlicedHashes
+        }
     }
 }
 

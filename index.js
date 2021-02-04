@@ -149,12 +149,12 @@ module.exports = {
 
         const updater = new StatsUpdater(storageService, type, precisionFormats);
 
-        updater.incrementTimeseriesHits();// все запросы всех пользователей
-        updater.incrementTimeseriesHits(entryPoint); // конкретный тип запроса всех пользователей
+        // updater.incrementTimeseriesHits();// все запросы всех пользователей
+        //updater.incrementTimeseriesHits(entryPoint); // конкретный тип запроса всех пользователей
         updater.incrementTotalHits(entryPoint);
         if (profile) {
-            updater.incrementTimeseriesHits(null, profile);  // все запросы пользователя
-            updater.incrementTimeseriesHits(entryPoint, profile); // конкретный тип запроса пользователя
+            //updater.incrementTimeseriesHits(null, profile);  // все запросы пользователя
+            //updater.incrementTimeseriesHits(entryPoint, profile); // конкретный тип запроса пользователя
             updater.incrementTotalHits(entryPoint, profile);
         }
     },
