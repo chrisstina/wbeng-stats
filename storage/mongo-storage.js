@@ -158,7 +158,8 @@ class MongoStorage extends Storage {
     // ============= Получение =============
 
     async getTimeseriesHits(hashes, operation) {
-        const operationsProjection = {key:1};
+        const timestampedResults = {};
+        const operationsProjection = {key: 1, startSliceTimestamp: 1};
         if (operation) {
             operationsProjection[operation] = 1;
         }
@@ -174,7 +175,14 @@ class MongoStorage extends Storage {
         if (stats === null) {
             return {};
         }
-        return stats.toArray();
+
+        for await (const doc of stats) {
+            if (doc.startSliceTimestamp) {
+                timestampedResults[doc.startSliceTimestamp] = doc[operation];
+            }
+        }
+
+        return timestampedResults;
     }
 
     async getProviderTimeseriesHits(provider, hash, limit = null, offset = 0) {
