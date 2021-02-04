@@ -3,7 +3,7 @@ const assert = require('assert'),
     moment = require('moment');
 
 const {generateStatsName, generateCounterName, generateResponseTimeName, HASH_DELIMITER} = require('./statsKey'),
-    {precisionFormats, precisionsInSeconds, getTimeSliceStart, getPreviousTimestampsForPrecision} = require('./precision');
+    {precisionFormats, precisionsInSeconds, getTimeSliceStart} = require('./precision');
 
 const statsConfig = config.get('stats');
 

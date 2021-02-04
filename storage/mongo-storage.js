@@ -165,40 +165,12 @@ class MongoStorage extends Storage {
 
     // ============= Получение =============
 
-    async getTimeseriesHits(hashes, operation) {
-        const timestampedResults = {};
-        let operationsProjection = {key: 1, startSliceTimestamp: 1};
-        if (operation) {
-            operationsProjection[operation] = 1;
-        } else {
-            operationsProjection = {};
-        }
-
-        const stats = await this.client
-            .db(this.config.dbName)
-            .collection(TOTALS_COLLECTION)
-            .find(
-                new SearchFilter({key: {$in: hashes}}),
-                {projection: defaultProjection})
-            .project(operationsProjection)
-
-        if (stats === null) {
-            return {};
-        }
-
-        for await (const doc of stats) {
-            if (doc.startSliceTimestamp) {
-                timestampedResults[doc.startSliceTimestamp] = operation
-                    ? doc[operation]
-                    : this.sumUpOperations(doc);
-            }
-        }
-
-        return timestampedResults;
+    async getTimeseriesHits(hashes, operation= null) {
+        return this.getTimeseries(TOTALS_COLLECTION, hashes, operation);
     }
 
-    async getProviderTimeseriesHits(provider, hash, limit = null, offset = 0) {
-        return this.getTimeseries(PROVIDER_COUNTER_COLLECTION, `${provider}${HASH_DELIMITER}${hash}`);
+    async getProviderTimeseriesHits(provider, hashes, operation= null) {
+        return this.getTimeseries(PROVIDER_TOTALS_COLLECTION, hashes, operation);
     }
 
     async getTimeseriesResponseTime(hash, limit = null, offset = 0) {
@@ -299,22 +271,38 @@ class MongoStorage extends Storage {
     /**
      *
      * @param collection
-     * @param hash
+     * @param hashes
+     * @param operation
      * @returns {Promise<*|{}>}
-     * @deprecated
      */
-    async getTimeseries(collection, hash) {
+    async getTimeseries(collection, hashes, operation) {
+        let operationsProjection = {};
+        if (operation && operation !== null) {
+            operationsProjection = {key: 1, startSliceTimestamp: 1};
+            operationsProjection[operation] = 1;
+        }
+
         const stats = await this.client
             .db(this.config.dbName)
             .collection(collection)
-            .findOne(
-                new SearchFilter({key: hash}),
-                {projection: defaultProjection});
+            .find(
+                new SearchFilter({key: {$in: hashes}}),
+                {projection: defaultProjection})
+            .project(operationsProjection)
 
         if (stats === null) {
             return {};
         }
-        return stats;
+
+        const timestampedResults = {};
+        for await (const doc of stats) {
+            if (doc.startSliceTimestamp) {
+                timestampedResults[doc.startSliceTimestamp] = operation
+                    ? doc[operation]
+                    : this.sumUpOperations(doc);
+            }
+        }
+        return timestampedResults;
     }
 
     createUpdateDocForTotalHits(operation, updateBy) {

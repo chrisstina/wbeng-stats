@@ -68,8 +68,9 @@ class Storage {
      * @param {String} hashesToUpdate
      * @param operation
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
+     * @deprecated
      */
-    async getProviderTimeseriesHits(provider, hashesToUpdate, operation) {}
+    async getProviderTimeseriesHits(provider, hashesToUpdate, operation = null) {}
 
     /**
      * Возвращает среднее время ответа по временным промежуткам

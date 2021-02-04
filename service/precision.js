@@ -68,12 +68,13 @@ module.exports = {
     /**
      * Генерирует указанное количество предыдущих значений timestamp с периодом duration
      * @param {"second"|"minute"|"day"|"week"|"month"|"year"} precision - precision название отрезка времени
-     * @param {Number|null} limit - сколько значений нужно сгенерировать
+     * @param {Number} limit - сколько значений нужно сгенерировать
      * @param {Number|null} offset
      * @throws Error
      * @return {(Moment)[]}
      */
     getPreviousTimestampsForPrecision: (precision, limit = 10, offset = 0) => {
+        assert(Number.isInteger(limit));
         const step = 1;
         const duration = moment.duration(step, precision);
         assert(duration.isValid(), 'Некорректное значение масштаба по времени');

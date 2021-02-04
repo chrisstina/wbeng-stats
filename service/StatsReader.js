@@ -1,6 +1,6 @@
 const moment = require('moment');
 const {generateStatsName, generateCounterName, generateResponseTimeName, HASH_DELIMITER} = require('./statsKey'),
-    precisionModule = require('./precision');
+    {valueToDate, precisionFormats, precisionsInSeconds, getTimeSliceStart, getPreviousTimestampsForPrecision} = require('./precision');
 
 class StatsReader {
     constructor(storageService, statType = 'request') {
@@ -22,7 +22,7 @@ class StatsReader {
      * @return {Promise<{string: string}>} {<operationName>: hits, <ioerationName2>: hits}
      */
     async getTotalHits(profile, precision, value) {
-        const key = `${generateStatsName(this._type, profile)}${HASH_DELIMITER}${precisionModule.valueToDate(precision, value)}`;
+        const key = `${generateStatsName(this._type, profile)}${HASH_DELIMITER}${valueToDate(precision, value)}`;
         return this._storage.getTotalHits(key);
     };
 
@@ -36,7 +36,7 @@ class StatsReader {
      * @return {Promise<{string: string}>} {<operationName>: hits, <operationName2>: hits}
      */
     async getProviderTotalHits(provider, profile, precision, value) {
-        return this._storage.getProviderTotalHits(provider, `${generateStatsName(this._type, profile)}:${precisionModule.valueToDate(precision, value)}`);
+        return this._storage.getProviderTotalHits(provider, `${generateStatsName(this._type, profile)}:${valueToDate(precision, value)}`);
     };
 
     /**
@@ -45,17 +45,16 @@ class StatsReader {
      * @param {String} precision название временного отрезка (1 minutes, 3 months, etc)
      * @param {String|null} entryPoint
      * @param {String|null} profile
-     * @param {Number|null} limit
+     * @param {Number} limit
      * @param {Number} offset
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getTimeseriesHits(precision, entryPoint = null, profile = null, limit = null, offset = 0) {
+    async getTimeseriesHits(precision, entryPoint = null, profile = null, limit = 50, offset = 0) {
         const keyPart = `${generateStatsName(this._type, profile)}${HASH_DELIMITER}`;
 
         // сформируем список ключей - в выбранном масштабе от текущего момента limit записей
-        const keys = precisionModule
-            .getPreviousTimestampsForPrecision(precision, limit)
-            .map(timestamp => keyPart + moment(timestamp).format(precisionModule.precisionFormats.get(precision)))
+        const keys = getPreviousTimestampsForPrecision(precision, limit)
+            .map(timestamp => keyPart + moment(timestamp).format(precisionFormats.get(precision)))
 
         return this._storage.getTimeseriesHits(keys, entryPoint);
     };
@@ -66,12 +65,18 @@ class StatsReader {
      * @param {String} precision название временного отрезка (1 minutes, 3 months, etc)
      * @param {String|null} entryPoint
      * @param {String|null} profile
-     * @param {Number|null} limit
+     * @param {Number} limit
      * @param {Number} offset
      * @return {Promise<{string: string}>} {<timeslice1>: <hits count>, <timeslice2>: <hits count>}
      */
-    async getProviderTimeseriesHits(provider, precision, entryPoint = null, profile = null, limit = null, offset = 0) {
-        return this._storage.getProviderTimeseriesHits(provider, `${keyModule.generateCounterName(this._type, entryPoint, profile)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+    async getProviderTimeseriesHits(provider, precision, entryPoint = null, profile = null, limit = 50, offset = 0) {
+        const keyPart = `${provider}${HASH_DELIMITER}${generateStatsName(this._type, profile)}${HASH_DELIMITER}`
+
+        // сформируем список ключей - в выбранном масштабе от текущего момента limit записей
+        const keys = getPreviousTimestampsForPrecision(precision, limit)
+            .map(timestamp => keyPart + moment(timestamp).format(precisionFormats.get(precision)))
+
+        return this._storage.getProviderTimeseriesHits(provider, keys, entryPoint);
     };
 
     /**
@@ -82,7 +87,7 @@ class StatsReader {
      * @return {Promise<{string: {}}>} {<timeslice1>: {averageResponseTime: <float>, hits: <number>}, {averageResponseTime: <float>, hits: <number>}}
      */
     async getTimeseriesResponseTime(entryPoint, precision = '1 minutes') {
-        return this._storage.getTimeseriesResponseTime(`${keyModule.generateResponseTimeName(entryPoint)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+        return this._storage.getTimeseriesResponseTime(`${keyModule.generateResponseTimeName(entryPoint)}:${precisionsInSeconds.get(precision)}`);
     }
     /**
      * олучение исторических данных по среднему времени выполнения запроса для указанного провайдера
@@ -93,7 +98,7 @@ class StatsReader {
      * @returns {Promise<{string: {averageResponseTime: Number, hits: Number}}>}
      */
     async getProviderTimeseriesResponseTime(provider, entryPoint, precision = '1 minutes') {
-        return this._storage.getProviderTimeseriesResponseTime(provider, `${keyModule.generateResponseTimeName(entryPoint)}:${precisionModule.precisionsInSeconds.get(precision)}`);
+        return this._storage.getProviderTimeseriesResponseTime(provider, `${keyModule.generateResponseTimeName(entryPoint)}:${precisionsInSeconds.get(precision)}`);
     }
 }
 

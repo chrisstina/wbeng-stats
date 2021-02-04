@@ -264,7 +264,7 @@ module.exports = {
      * @param offset
      * @return {Promise<{}|null>}
      */
-    getAPITimeseriesHits: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = 10, offset = 0) => {
+    getAPITimeseriesHits: async (type = 'request', precision = null, entryPoint = null, profile = null, limit = 50, offset = 0) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
@@ -287,17 +287,14 @@ module.exports = {
      * @param offset
      * @return {Promise<{}|null>}
      */
-    getProviderTimeseriesHits: async (type = 'request', provider, precision = null, entryPoint = null, profile = null, limit = null, offset = 0) => {
+    getProviderTimeseriesHits: async (type = 'request', provider, precision = null, entryPoint = null, profile = null, limit = 50, offset = 0) => {
         assert(allowedRequestTypes.indexOf(type) !== -1, 'Некорректный тип запроса. Для получения данных по API запросам, используйте тип request. Для получения данных по API запросам, используйте тип error.');
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
-        precision = precision || defaultTimeseriesPrecision;
+        precision = precision || defaultStatsPrecision;
 
-        if (config.get('stats.timeseriesPrecisions').indexOf(precision) === -1) {
-            precision = defaultTimeseriesPrecision;
-            logger.warn(`[STATS][VIEW] Invalid precision ${precision}, using default`);
-        }
-        logger.verbose(`[STATS][VIEW] Retrieve provider ${provider} calls stats for ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
+        assert(config.get('stats.totalHitsPrecisions').indexOf(precision) !== -1, `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.totalHitsPrecisions').join(', ')}`);
+        logger.verbose(`[STATS][VIEW] Retrieve provider calls timeseries by ${precision || 'default precision'}, ${entryPoint || 'all operations'}, ${profile || 'all profiles'}`);
         const reader = new StatsReader(storageService, type);
         return await reader.getProviderTimeseriesHits(provider, precision, entryPoint, profile, limit, offset);
     },
