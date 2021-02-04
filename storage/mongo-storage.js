@@ -159,9 +159,11 @@ class MongoStorage extends Storage {
 
     async getTimeseriesHits(hashes, operation) {
         const timestampedResults = {};
-        const operationsProjection = {key: 1, startSliceTimestamp: 1};
+        let operationsProjection = {key: 1, startSliceTimestamp: 1};
         if (operation) {
             operationsProjection[operation] = 1;
+        } else {
+            operationsProjection = {};
         }
 
         const stats = await this.client
@@ -170,7 +172,7 @@ class MongoStorage extends Storage {
             .find(
                 new SearchFilter({key: {$in: hashes}}),
                 {projection: defaultProjection})
-            .project(operationsProjection)
+            .project({})
 
         if (stats === null) {
             return {};
@@ -178,11 +180,27 @@ class MongoStorage extends Storage {
 
         for await (const doc of stats) {
             if (doc.startSliceTimestamp) {
-                timestampedResults[doc.startSliceTimestamp] = doc[operation];
+                const operationTotal = operation
+                    ? doc[operation]
+                    : this.sumUpOperations(doc)
+                timestampedResults[doc.startSliceTimestamp] = operationTotal;
             }
         }
 
         return timestampedResults;
+    }
+
+    /**
+     * Для записи в коллекции просуммирует все значения полей с названиями операций
+     * @param key
+     * @param startSliceTimestamp
+     * @param _id
+     * @param createdAt
+     * @param {{}} operations
+     * @return {Number}
+     */
+    sumUpOperations({key, startSliceTimestamp, _id, createdAt, ...operations}) {
+        return Object.values(operations).reduce((total, current) => total + current, 0);
     }
 
     async getProviderTimeseriesHits(provider, hash, limit = null, offset = 0) {
