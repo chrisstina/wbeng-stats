@@ -7,10 +7,14 @@ const validate = require('./../validator');
 
 /**
  * Переводит название временного отрезка в секунды. Например, "1 minutes" => 60
- * @param {string} precision - precision title from config, e.g. "1 minutes", "3 months"
+ * @param {string} precision - precision title from config, e.g. "1 minutes", "3 months" OR "minute", "month" etc
  * @return {number}
  */
 const getPrecisionInSeconds = precision => {
+    const defaultUnit = 1;
+    if (precision.indexOf(' ') === -1) {
+        precision = [defaultUnit, precision].join(' ')
+    }
     const [duration, unit] = precision.split(" ");
     return moment.duration(parseInt(duration), unit).asSeconds();
 };
@@ -29,7 +33,8 @@ statsConfig.get('totalHitsPrecisions').forEach((precision, idx) => {
  * @type {Map<String, Number>}
  */
 const precisionsInSeconds = new Map();
-    [...statsConfig.get('timeseriesPrecisions'),
+    [...statsConfig.get('totalHitsPrecisions'),
+    ...statsConfig.get('timeseriesPrecisions'),
     ...statsConfig.get('responseTimePrecisions')]
     .forEach(precision => {
         precisionsInSeconds.set(precision, getPrecisionInSeconds(precision));

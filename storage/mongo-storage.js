@@ -1,5 +1,6 @@
 const {MongoClient} = require("mongodb");
-const moment = require('moment');
+const assert = require('assert'),
+    moment = require('moment');
 
 const logger = require('./../logger');
 
@@ -108,19 +109,25 @@ class MongoStorage extends Storage {
      * Обновляет статистику запросов на операцию по временным отрезкам.
      * @param {String} operation название API операции (entryPoint)
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
+     * @param {Map} timeSlicedHashesToUpdate - набор значений таймпстэмпов начала временного отрезка
      * @param {Number} updateBy default 1
      */
-    async updateTotalHits(operation, hashesToUpdate, updateBy = 1) {
+    async updateTotalHits(operation, hashesToUpdate, timeSlicedHashesToUpdate, updateBy = 1) {
         try {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(TOTALS_COLLECTION);
 
             let updateDoc = {
-                $setOnInsert: {createdAt: Math.floor(Date.now() / 1000)},
-                $inc: {}
+                $setOnInsert: {
+                    createdAt: Math.floor(Date.now() / 1000),
+                },
+                $inc: {},
+                $set: {timeSliceTimestamp: 0} // timestamp начала временного отрезка для данного масштаба (начало часа, начало минуты и т.п.)
             };
 
             for (const hash of hashesToUpdate) {
+                assert( ! Number.isNaN(timeSlicedHashesToUpdate.get(hash)));
+                updateDoc.$set.startSliceTimestamp = timeSlicedHashesToUpdate.get(hash);
                 updateDoc.$inc[operation] = updateBy;
                 await collection.updateOne({key: hash}, updateDoc, {upsert: true});
             }

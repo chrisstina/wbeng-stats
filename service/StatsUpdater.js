@@ -1,4 +1,5 @@
-const config = require('config'),
+const assert = require('assert'),
+    config = require('config'),
     moment = require('moment');
 
 const {generateStatsName, generateCounterName, generateResponseTimeName, HASH_DELIMITER} = require('./statsKey'),
@@ -32,12 +33,27 @@ class StatsUpdater {
      * @param {string|null} profile
      */
     incrementTotalHits(entryPoint = null, profile = null) {
-        const keyName = generateStatsName(this._type, profile);
-        const hashes = statsConfig.get('totalHitsPrecisions').map(precision => {
-            const formattedDate = moment().format(precisionModule.precisionFormats.get(precision));
-            return `${keyName}${HASH_DELIMITER}${formattedDate}`;
+        const keyName = generateStatsName(this._type, profile),
+            /**
+             *
+             * @type {string[]}
+             */
+            hashes = [],
+            /**
+             * @type {Map<string, number>} <key, timestampStart>
+             */
+            timeSlicedHashes = new Map();
+
+        statsConfig.get('totalHitsPrecisions').forEach(precision => {
+            const formattedDate = moment().format(precisionModule.precisionFormats.get(precision)),
+                precisionInSeconds = precisionModule.precisionsInSeconds.get(precision), // переводим в секунды
+                hash = `${keyName}${HASH_DELIMITER}${formattedDate}`;
+            assert(precisionInSeconds !== undefined);
+            timeSlicedHashes.set(hash, precisionModule.getTimeSliceStart(precisionInSeconds));
+            hashes.push(hash);
         });
-        this._storage.updateTotalHits(entryPoint, hashes);
+
+        this._storage.updateTotalHits(entryPoint, hashes, timeSlicedHashes);
     }
 
     /**

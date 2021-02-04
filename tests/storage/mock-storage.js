@@ -36,9 +36,10 @@ class MockStorage extends Storage {
      * Обновляет статистику запросов на операцию по временным отрезкам.
      * @param {String} operation название API операции (entryPoint)
      * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
+     * @param {Map} timeSlicedHashesTpUpdate - набор значений таймпстэмпов начала временного отрезка
      * @param {Number} updateBy default 1
      */
-    async updateTotalHits(operation, hashesToUpdate, updateBy = 1) {
+    async updateTotalHits(operation, hashesToUpdate, timeSlicedHashesTpUpdate, updateBy = 1) {
         try {
             logger.verbose('[STATS][STORAGE][MOCK] updateTotalHits');
         } catch (e) {
