@@ -51,7 +51,6 @@ const initStorageService = storageName => {
 };
 
 const defaultResponsetimePrecision = config.get('stats.responseTimePrecisions')[0];
-const defaultTimeseriesPrecision = config.get('stats.timeseriesPrecisions')[0];
 const defaultStatsPrecision = config.get('stats.totalHitsPrecisions')[0];
 
 /**
@@ -193,13 +192,6 @@ module.exports = {
         const updater = new StatsUpdater(storageService, type, precisionFormats);
         updater.incrementProviderTotalHits(provider.code, entryPoint);
         updater.incrementProviderTotalHits(provider.code, entryPoint, profile);
-
-        updater.incrementProviderTimeseriesHits(provider.code); // все запросы всех пользователей
-        updater.incrementProviderTimeseriesHits(provider.code, entryPoint); //  конкретный тип запроса всех пользователей
-        if (profile) {
-            updater.incrementProviderTimeseriesHits(provider.code, null, profile); // все запросы конкретного пользователя
-            updater.incrementProviderTimeseriesHits(provider.code, entryPoint, profile); //  конкретный тип запроса конкретного пользователя
-        }
     },
     /**
      * Обновит среднее время запроса к конкретному провайдеру за текущий промежуток времени (минута \ 30 секунд)
@@ -260,7 +252,7 @@ module.exports = {
      * @param {"second"|"minute"|"day"|"week"|"month"|"year"|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
      * @param {string|null} entryPoint
      * @param {string|null} profile
-     * @param limit
+     * @param {number} limit default 50
      * @param offset
      * @return {Promise<{}|null>}
      */
@@ -280,7 +272,7 @@ module.exports = {
      *
      * @param {string} type request | error
      * @param {String} provider код провайдера
-     * @param {string|null} precision - precision title from config, e.g. "1 minutes", "3 months"
+     * @param {"second"|"minute"|"day"|"week"|"month"|"year"|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
      * @param {string|null} entryPoint
      * @param {string|null} profile
      * @param limit
@@ -304,7 +296,7 @@ module.exports = {
      * @param {String} type "request" | "error"
      * @param {String} provider код провайдера
      * @param {String|null} profile
-     * @param {String|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
+     * @param {"second"|"minute"|"day"|"week"|"month"|"year"|null} precision название отрезка времени, возможные значения "day", "month", "week", "year"
      * @param {String|null}value конкретный отрезок времени.
      *          если день, то дата, если год - номер года, номер недели года или номер месяца года. если не указан, берется текущий.
      *          например, unit = day, value = 19.08.2020, unit = week, value = 43.2020 или 43, unit = month, value = 02.2019 или 02 или 2.
@@ -328,10 +320,9 @@ module.exports = {
      *
      * Например,
      * getAPIResponseTime('flights') - среднее время запроса поиска в минуту
-     * getAPIResponseTime('flights', '30 seconds') - среднее время запроса поиска в полминуты
      *
      * @param entryPoint
-     * @param precision
+     * @param {"minute"|null} precision название отрезка времени, возможные "minute" (пока только поминутно)
      * @param profile
      * @return {Promise<{string: {}}>}
      */

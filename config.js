@@ -1,13 +1,12 @@
 module.exports = {
-    timeseriesPrecisions: [ // возможный масштаб временных отрезков для исторических данных
+    timeseriesPrecisions: [ // возможный масштаб временных отрезков для исторических данных -- todo удалить
         "1 minutes",
         "1 hours",
         "1 days",
         "1 months"
     ],
     responseTimePrecisions: [ // возможная величина временных отрезков для статистики длительности запроса
-        "30 seconds",
-        "1 minutes",
+        "minute",
     ],
     totalHitsPrecisions: [ // возможная величина временных отрезков для сбора итоговой статистики по запросам
         "day",

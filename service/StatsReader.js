@@ -83,11 +83,11 @@ class StatsReader {
      * Получение исторических данных по среднему времени выполнения запроса
      *
      * @param entryPoint
-     * @param {string} precision название временного отрезка (1 minutes, 30 seconds)
+     * @param {"minute"|null} precision название временного отрезка (1 minutes, 30 seconds)
      * @return {Promise<{string: {}}>} {<timeslice1>: {averageResponseTime: <float>, hits: <number>}, {averageResponseTime: <float>, hits: <number>}}
      */
-    async getTimeseriesResponseTime(entryPoint, precision = '1 minutes') {
-        return this._storage.getTimeseriesResponseTime(`${keyModule.generateResponseTimeName(entryPoint)}:${precisionsInSeconds.get(precision)}`);
+    async getTimeseriesResponseTime(entryPoint, precision = 'minute') {
+        return this._storage.getTimeseriesResponseTime(`${generateResponseTimeName(entryPoint)}:${precisionsInSeconds.get(precision)}`);
     }
     /**
      * олучение исторических данных по среднему времени выполнения запроса для указанного провайдера
@@ -98,7 +98,7 @@ class StatsReader {
      * @returns {Promise<{string: {averageResponseTime: Number, hits: Number}}>}
      */
     async getProviderTimeseriesResponseTime(provider, entryPoint, precision = '1 minutes') {
-        return this._storage.getProviderTimeseriesResponseTime(provider, `${keyModule.generateResponseTimeName(entryPoint)}:${precisionsInSeconds.get(precision)}`);
+        return this._storage.getProviderTimeseriesResponseTime(provider, `${generateResponseTimeName(entryPoint)}:${precisionsInSeconds.get(precision)}`);
     }
 }
 
