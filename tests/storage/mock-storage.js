@@ -47,7 +47,7 @@ class MockStorage extends Storage {
         }
     }
 
-    async updateProviderTotalHits(provider, operation, hashesToUpdate, updateBy = 1) {
+    async updateProviderTotalHits(provider, operation, hashesToUpdate, timeSlicedHashesToUpdate, updateBy = 1) {
         try {
             logger.verbose('[STATS][STORAGE][MOCK] updateProviderTotalHits');
         } catch (e) {
@@ -55,7 +55,7 @@ class MockStorage extends Storage {
         }
     }
 
-    async getTimeseriesHits(hash, limit = null, offset = 0) {
+    async getTimeseriesHits(hashesToUpdate, operation = null) {
         logger.verbose('[STATS][STORAGE][MOCK] getTimeseriesHits');
         return {};
     }
