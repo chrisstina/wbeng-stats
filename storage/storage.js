@@ -55,6 +55,18 @@ class Storage {
     async updateProviderTotalHits(provider, operation, hashesToUpdate, timeSlicedHashesToUpdate, updateBy = 1) {}
 
     /**
+     * Обновляет статистику запросов на операцию с а\к конкретного провайдера по временным отрезкам.
+     * @param {String} carrier код а\к (SU, S7, etc)
+     * @param {String} provider код провайдера (1S, 1H, etc)
+     * @param {String} operation название API операции (entryPoint)
+     * @param {String[]} hashesToUpdate набор ключей, которые надо обновить. Ключи сформированы по временным отрезкам
+     * @param {Map} timeSlicedHashesToUpdate - набор значений таймпстэмпов начала временного отрезка
+     * @param {Number} updateBy default 1
+     * @return {Promise<void>}
+     */
+    async updateCarrierTotalHits(carrier, provider, operation, hashesToUpdate, timeSlicedHashesToUpdate, updateBy = 1) {}
+
+    /**
      * Возвращает разбивку событий по временным промежуткам
      * @param {String[]} hashesToUpdate
      * @param {String|null} operation

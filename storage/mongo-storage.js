@@ -4,12 +4,21 @@ const assert = require('assert'),
 
 const logger = require('./../logger');
 
-const COUNTER_COLLECTION = 'timeseries_hits';
 const TOTALS_COLLECTION = 'total_hits';
 const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_TOTALS_COLLECTION = 'provider_total_hits';
-const PROVIDER_COUNTER_COLLECTION = 'provider_timeseries_hits';
 const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime';
+const CARRIER_TOTALS_COLLECTION = 'carrier_total_hits';
+/**
+ *
+ * @deprecated
+ */
+const COUNTER_COLLECTION = 'timeseries_hits';
+/**
+ * @deprecated
+ */
+const PROVIDER_COUNTER_COLLECTION = 'provider_timeseries_hits';
+
 
 const {HASH_DELIMITER} = require('./../service/statsKey');
 
@@ -125,7 +134,8 @@ class MongoStorage extends Storage {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(TOTALS_COLLECTION);
 
-            let updateDoc = this.createUpdateDocForTotalHits(operation, updateBy);
+            let updateDoc = this.createUpdateDocForTotalHits();
+            updateDoc.$inc[operation] = updateBy;
 
             for (const hash of hashesToUpdate) {
                 assert( ! Number.isNaN(timeSlicedHashesToUpdate.get(hash)));
@@ -151,7 +161,8 @@ class MongoStorage extends Storage {
             const database = this.client.db(this.config.dbName);
             const collection = database.collection(`${PROVIDER_TOTALS_COLLECTION}`);
 
-            let updateDoc = this.createUpdateDocForTotalHits(operation, updateBy);
+            let updateDoc = this.createUpdateDocForTotalHits();
+            updateDoc.$inc[operation] = updateBy;
 
             for (const hash of hashesToUpdate) {
                 assert( ! Number.isNaN(timeSlicedHashesToUpdate.get(hash)));
@@ -163,6 +174,35 @@ class MongoStorage extends Storage {
         }
     }
 
+
+    /**
+     * Обновляет статистику запросов на операцию с а\к конкретного провайдера по временным отрезкам.
+     * @param {String} carrier код а\к (SU, S7, etc)
+     * @param {string} provider
+     * @param {string} operation
+     * @param {string[]} hashesToUpdate
+     * @param {Map<string, number>} timeSlicedHashesToUpdate
+     * @param {number} updateBy
+     * @return {Promise<void>}
+     */
+    async updateCarrierTotalHits(carrier, provider, operation, hashesToUpdate, timeSlicedHashesToUpdate, updateBy = 1) {
+        try {
+            const database = this.client.db(this.config.dbName);
+            const collection = database.collection(`${CARRIER_TOTALS_COLLECTION}`);
+
+            let updateDoc = this.createUpdateDocForTotalHits(operation, updateBy);
+            updateDoc.$inc[`${operation}.total`] = updateBy;
+            updateDoc.$inc[`${operation}.${provider}`] = updateBy;
+
+            for (const hash of hashesToUpdate) {
+                assert( ! Number.isNaN(timeSlicedHashesToUpdate.get(hash)));
+                updateDoc.$set.startSliceTimestamp = timeSlicedHashesToUpdate.get(hash);
+                await collection.updateOne({key: [carrier, hash].join(HASH_DELIMITER)}, updateDoc, {upsert: true});
+            }
+        } catch (e) {
+            logger.error('[STATS][STORAGE][MONGO]' + e.stack);
+        }
+    }
     // ============= Получение =============
 
     async getTimeseriesHits(hashes, operation= null) {
@@ -305,7 +345,7 @@ class MongoStorage extends Storage {
         return timestampedResults;
     }
 
-    createUpdateDocForTotalHits(operation, updateBy) {
+    createUpdateDocForTotalHits() {
         let updateDoc = {
             $setOnInsert: {
                 createdAt: Math.floor(Date.now() / 1000),
@@ -313,7 +353,6 @@ class MongoStorage extends Storage {
             $inc: {},
             $set: {startSliceTimestamp: 0} // timestamp начала временного отрезка для данного масштаба (начало часа, начало минуты и т.п.)
         };
-        updateDoc.$inc[operation] = updateBy;
         return updateDoc;
     }
 

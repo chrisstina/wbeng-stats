@@ -211,6 +211,20 @@ module.exports = {
 
         updater.updateProviderResponseTime(responseDuration, entryPoint, provider.code);
     },
+    updateCarrierStats: (request) => {
+        logger.verbose(`[STATS][UPD] Update carrier total hits, ${process.env.NODE_ENV} env`);
+        assert(request.entryPoint !== undefined, 'Need entryPoint');
+        assert(request.carrier !== undefined, 'Need carrier');
+        assert(request.provider !== undefined, 'Need provider');
+        assert(storageIsReady);
+
+        const {entryPoint, provider, carrier, profile} = request;
+        const updater = new StatsUpdater(storageService, 'request');
+        updater.incrementCarrierTotalHits(carrier, provider.code, entryPoint);
+        if (profile) {
+            updater.incrementCarrierTotalHits(carrier, provider.code, entryPoint, profile);
+        }
+    },
 
     // ===== Чтение счетчиков  =====
 

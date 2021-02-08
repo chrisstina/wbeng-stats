@@ -50,6 +50,18 @@ class StatsUpdater {
 
     /**
      *
+     * @param {string} carrierCode
+     * @param {string} providerCode
+     * @param {string} entryPoint
+     * @param {string|null} profile
+     */
+    incrementCarrierTotalHits(carrierCode, providerCode, entryPoint, profile = null) {
+        const {hashes, timeSlicedHashes} = this.prepareTotalHitsHashes(profile);
+        this._storage.updateCarrierTotalHits(carrierCode, providerCode, entryPoint, hashes, timeSlicedHashes);
+    }
+
+    /**
+     *
      * @param entryPoint
      * @param profile
      * @return {Promise<*>}
