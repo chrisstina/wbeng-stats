@@ -457,7 +457,9 @@ module.exports = {
 
         for (const carrier of await reader.getKnownCarriers()) {
             const carrierTotals = await reader.getCarrierTotalHits(carrier, profile, precision, value);
-            table[carrier] = entryPoint ? carrierTotals[entryPoint] : carrierTotals;
+            table[carrier] = carrierTotals !== null
+                ? (entryPoint ? carrierTotals[entryPoint] : carrierTotals)
+                : {};
         }
 
         return table;
