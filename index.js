@@ -224,6 +224,7 @@ module.exports = {
         if (profile) {
             updater.incrementCarrierTotalHits(carrier, provider.code, entryPoint, profile);
         }
+        updater.updateKnownCarriers(carrier);
     },
 
     // ===== Чтение счетчиков  =====

@@ -200,7 +200,6 @@ class MongoStorage extends Storage {
                 updateDoc.$set.startSliceTimestamp = timeSlicedHashesToUpdate.get(hash);
                 await collection.updateOne({key: [carrier, hash].join(HASH_DELIMITER)}, updateDoc, {upsert: true});
             }
-            this.updateKnownCarriers(carrier);
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }

@@ -60,6 +60,10 @@ class StatsUpdater {
         this._storage.updateCarrierTotalHits(carrierCode, providerCode, entryPoint, hashes, timeSlicedHashes);
     }
 
+    updateKnownCarriers(carrierCode) {
+        this._storage.updateKnownCarriers(carrierCode);
+    }
+
     /**
      *
      * @param entryPoint
