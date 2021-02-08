@@ -9,6 +9,7 @@ const RESPONSETIME_COLLECTION = 'responsetime';
 const PROVIDER_TOTALS_COLLECTION = 'provider_total_hits';
 const PROVIDER_RESPONSETIME_COLLECTION = 'provider_responsetime';
 const CARRIER_TOTALS_COLLECTION = 'carrier_total_hits';
+const CARRIER_COLLECTION = 'known_carriers';
 /**
  *
  * @deprecated
@@ -199,6 +200,7 @@ class MongoStorage extends Storage {
                 updateDoc.$set.startSliceTimestamp = timeSlicedHashesToUpdate.get(hash);
                 await collection.updateOne({key: [carrier, hash].join(HASH_DELIMITER)}, updateDoc, {upsert: true});
             }
+            this.updateKnownCarriers(carrier);
         } catch (e) {
             logger.error('[STATS][STORAGE][MONGO]' + e.stack);
         }
@@ -220,9 +222,7 @@ class MongoStorage extends Storage {
             .findOne(
                 new SearchFilter({key: hash}),
                 {projection: defaultProjection});
-        return (stats === null)
-            ? null
-            : stats;
+        return stats;
     }
 
     async getProviderTimeseriesResponseTime(provider, hash) {
@@ -244,9 +244,7 @@ class MongoStorage extends Storage {
             .findOne(
                 new SearchFilter({key: hash}),
                 {projection: defaultProjection});
-        return (stats === null)
-            ? null
-            : stats;
+        return stats;
     }
 
     async getProviderTotalHits(provider, hash) {
@@ -256,9 +254,35 @@ class MongoStorage extends Storage {
             .findOne(
                 new SearchFilter({key: `${provider}${HASH_DELIMITER}${hash}`}),
                 {projection: defaultProjection});
-        return (stats === null)
-            ? null
-            : stats;
+        return stats;
+    }
+
+    async getCarrierTotalHits(carrier,  hash) {
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(CARRIER_TOTALS_COLLECTION)
+            .findOne(
+                new SearchFilter({key: `${carrier}${HASH_DELIMITER}${hash}`}),
+                {projection: defaultProjection});
+        return stats;
+    }
+
+    /**
+     *
+     * @return {Promise<string[]>}
+     */
+    async getKnownCarriers() {
+        const stats = await this.client
+            .db(this.config.dbName)
+            .collection(CARRIER_COLLECTION)
+            .find()
+            .sort({'metrics.totalHits': -1})
+            .project({key: 1});
+        const carriers = [];
+        await stats.forEach(carrier => {
+            carriers.push(carrier.key);
+        })
+        return carriers;
     }
 
     // ============= Удаление =============
@@ -461,6 +485,16 @@ class MongoStorage extends Storage {
     updateAverage(currentCount, currentAverage, updateWithValue) {
         const n = currentCount + 1; // new count
         return (n * currentAverage + updateWithValue) / (n + 1);
+    }
+
+    async updateKnownCarriers(carrier) {
+        const database = this.client.db(this.config.dbName);
+        const carrierCollection = database.collection(`${CARRIER_COLLECTION}`);
+        const carrierUpdateDoc = {
+            $inc: {}
+        }
+        carrierUpdateDoc.$inc[`metrics.totalHits`] = 1;
+        await carrierCollection.updateOne({key: carrier}, carrierUpdateDoc , {upsert: true})
     }
 }
 

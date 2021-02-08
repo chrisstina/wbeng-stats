@@ -427,8 +427,36 @@ module.exports = {
         const reader = new StatsReader(storageService);
         const table = {};
 
-        for (const provider of config.get('stats.allowedProviders')) {
+        for (const provider of await reader.getKnownProviders()) {
             table[provider] = await reader.getProviderTotalHits(provider, profile, precision, value);
+        }
+
+        return table;
+    },
+    /**
+     *
+     * @param entryPoint
+     * @param profile
+     * @param precision
+     * @param value
+     * @return {Promise<{}>}
+     */
+    getCarrierTotalHitsByProvider: async(entryPoint = null, profile = null, precision = null, value = null) => {
+        assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
+
+        precision = precision || defaultStatsPrecision;
+        assert(precision === null || config.get('stats.totalHitsPrecisions').indexOf(precision) !== -1,
+            `Некорректное значение временного отрезка ${precision}, ожидается ${config.get('stats.totalHitsPrecisions').join(', ')}`);
+
+        value = value || getDefaultValueForPrecision(precision);
+        logger.verbose(`[STATS][VIEW] Retrieve all API calls stats for the ${value || 'last'} ${precision}, for profile ${profile}, every carrier`);
+
+        const reader = new StatsReader(storageService);
+        const table = {};
+
+        for (const carrier of await reader.getKnownCarriers()) {
+            const carrierTotals = await reader.getCarrierTotalHits(carrier, profile, precision, value);
+            table[carrier] = entryPoint ? carrierTotals[entryPoint] : carrierTotals;
         }
 
         return table;

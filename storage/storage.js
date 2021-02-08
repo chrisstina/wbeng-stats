@@ -107,6 +107,14 @@ class Storage {
     async getProviderTotalHits(provider, hash) {}
 
     /**
+     * Возвращает разбивку по провайдерам на указанный промежуток времени (ключ) для указанной а\к
+     * @param {string} carrier
+     * @param {string} hash
+     * @return {Promise<{}>}
+     */
+    async getCarrierTotalHits(carrier, hash) {}
+
+    /**
      * Возвращает среднее время ответа по временным промежуткам для провайдера
      * @param provider код провайдера
      * @param hash
@@ -119,6 +127,12 @@ class Storage {
      * @return {Promise<[]>}
      */
     async getTimeseriesKeys() {}
+
+    /**
+     *
+     * @return {Promise<string[]>}
+     */
+    async getKnownCarriers() {}
 
     /**
      * Удаляет записи об общем количестве вызовов

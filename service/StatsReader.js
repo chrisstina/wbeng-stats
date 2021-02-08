@@ -1,5 +1,7 @@
-const moment = require('moment');
-const {generateStatsName, generateCounterName, generateResponseTimeName, HASH_DELIMITER} = require('./statsKey'),
+const config = require('config'),
+    moment = require('moment');
+
+const {generateStatsName, generateResponseTimeName, HASH_DELIMITER} = require('./statsKey'),
     {valueToDate, precisionFormats, precisionsInSeconds, getTimeSliceStart, getPreviousTimestampsForPrecision} = require('./precision');
 
 class StatsReader {
@@ -38,6 +40,33 @@ class StatsReader {
     async getProviderTotalHits(provider, profile, precision, value) {
         return this._storage.getProviderTotalHits(provider, `${generateStatsName(this._type, profile)}:${valueToDate(precision, value)}`);
     };
+
+    /**
+     * Получение количества вызовов за указанный период времени для конкретной а\к с разбивкой по провайдерам и операциям
+     * @param carrier
+     * @param profile
+     * @param precision
+     * @param value
+     * @return {Promise<{}>} - например { FV: {flights: { KW: 6, total: 6 }}, {price: {...}} }
+     */
+    async getCarrierTotalHits(carrier, profile, precision, value) {
+        const hash = `${generateStatsName(this._type, profile)}:${valueToDate(precision, value)}`;
+        return this._storage.getCarrierTotalHits(carrier, hash);
+    }
+
+    /**
+     * Получение количества вызовов указанной операции за указанный период времени для конкретной а\к с разбивкой по провайдерам
+     * @param carrier
+     * @param entryPoint
+     * @param profile
+     * @param precision
+     * @param value
+     * @return {Promise<{}|*>}
+     */
+    async getCarrierTotalHitsForOperation(carrier, entryPoint, profile, precision, value) {
+        const hash = `${generateStatsName(this._type, profile)}:${valueToDate(precision, value)}`;
+        return this._storage.getCarrierTotalHits(carrier, hash, entryPoint);
+    }
 
     /**
      * Получение исторических данных по количеству вызовов операций, общее количество по всем провайдерам
@@ -99,6 +128,22 @@ class StatsReader {
      */
     async getProviderTimeseriesResponseTime(provider, entryPoint, precision = '1 minutes') {
         return this._storage.getProviderTimeseriesResponseTime(provider, `${generateResponseTimeName(entryPoint)}:${precisionsInSeconds.get(precision)}`);
+    }
+
+    /**
+     *
+     * @return {Promise<string[]>}
+     */
+    async getKnownCarriers() {
+        return this._storage.getKnownCarriers();
+    }
+
+    /**
+     *
+     * @return {Promise<string[]>}
+     */
+    async getKnownProviders() {
+        return config.get('stats.allowedProviders');
     }
 }
 
