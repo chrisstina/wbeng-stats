@@ -494,7 +494,8 @@ class MongoStorage extends Storage {
             $inc: {}
         }
         carrierUpdateDoc.$inc[`metrics.totalHits`] = 1;
-        await carrierCollection.updateOne({key: carrier}, carrierUpdateDoc , {upsert: true})
+        await carrierCollection.updateOne({key: carrier}, carrierUpdateDoc , {upsert: true});
+        logger.debug(`[STATS][STORAGE][MONGO] added ${carrier} to known carriers`);
     }
 }
 

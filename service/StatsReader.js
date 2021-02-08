@@ -55,20 +55,6 @@ class StatsReader {
     }
 
     /**
-     * Получение количества вызовов указанной операции за указанный период времени для конкретной а\к с разбивкой по провайдерам
-     * @param carrier
-     * @param entryPoint
-     * @param profile
-     * @param precision
-     * @param value
-     * @return {Promise<{}|*>}
-     */
-    async getCarrierTotalHitsForOperation(carrier, entryPoint, profile, precision, value) {
-        const hash = `${generateStatsName(this._type, profile)}:${valueToDate(precision, value)}`;
-        return this._storage.getCarrierTotalHits(carrier, hash, entryPoint);
-    }
-
-    /**
      * Получение исторических данных по количеству вызовов операций, общее количество по всем провайдерам
      *
      * @param {String} precision название временного отрезка (1 minutes, 3 months, etc)
