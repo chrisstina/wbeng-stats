@@ -442,7 +442,7 @@ module.exports = {
      * @param value
      * @return {Promise<{}>}
      */
-    getCarrierTotalHitsByProvider: async(entryPoint = null, profile = null, precision = null, value = null) => {
+    getCarrierTotalHitsByProvider: async(entryPoint, profile = null, precision = null, value = null) => {
         assert(storageIsReady, 'Не удалось подключиться к хранилищу. Удостоверьтесь, что был вызван метод connect()');
 
         precision = precision || defaultStatsPrecision;
@@ -457,11 +457,16 @@ module.exports = {
 
         for (const carrier of await reader.getKnownCarriers()) {
             const carrierTotals = await reader.getCarrierTotalHits(carrier, profile, precision, value);
-            table[carrier] = carrierTotals !== null
-                ? (entryPoint ? carrierTotals[entryPoint] : carrierTotals)
+            const carrierStats = carrierTotals !== null
+                ? (carrierTotals[entryPoint] || {})
                 : {};
+            for (const [provider, providerTotal] of Object.entries(carrierStats)) {
+                if ( ! table[provider]) {
+                    table[provider] = {};
+                }
+                table[provider][carrier] = providerTotal;
+            }
         }
-
         return table;
     },
 
