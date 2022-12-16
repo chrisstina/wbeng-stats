@@ -17,8 +17,9 @@ const config_1 = __importDefault(require("config"));
 const updateStats_1 = require("./service/updateStats");
 const createKey_1 = require("./service/createKey");
 const createWriteRepository_1 = require("./service/createWriteRepository");
-const writeRepository = (0, createWriteRepository_1.createWriteRepository)(config_1.default.get('storage'));
-const keyService = (0, createKey_1.createKeyService)({ keyDelimiter: config_1.default.get('keyDelimiter') });
+const statsConfig = config_1.default.get('stats');
+const writeRepository = (0, createWriteRepository_1.createWriteRepository)(statsConfig.get('storage'));
+const keyService = (0, createKey_1.createKeyService)({ keyDelimiter: statsConfig.get('keyDelimiter') });
 function update(request, type = 'request') {
     return __awaiter(this, void 0, void 0, function* () {
         return yield (0, updateStats_1.updateStats)(request, type, writeRepository, keyService);
