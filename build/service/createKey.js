@@ -14,7 +14,6 @@ function createKeyService(config) {
                 request.entryPoint,
                 request.profile,
                 (request.provider != null) ? request.provider : '',
-                request.server,
                 ...Object.values(timestamp)
             ]
                 .filter(keyPart => keyPart !== '')

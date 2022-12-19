@@ -1,5 +1,4 @@
 export interface CreateWbengAPIErrorRecord {
-  server: string
   entryPoint: string
   errors: string[]
   profile?: string

@@ -18,7 +18,6 @@ export class MysqlWriteRepository implements WriteRepository {
       .insert({
         record_key: statRecord.key,
         entryPoint: statRecord.entryPoint,
-        server: statRecord.server,
         profile: statRecord.profile,
         ...statRecord.timestamp
       })
@@ -40,7 +39,6 @@ export class MysqlWriteRepository implements WriteRepository {
         record_key: statRecord.key,
         entryPoint: statRecord.entryPoint,
         provider: statRecord.provider,
-        server: statRecord.server,
         profile: statRecord.profile,
         ...statRecord.timestamp
       })
@@ -62,7 +60,6 @@ export class MysqlWriteRepository implements WriteRepository {
         record_key: statRecord.key,
         entryPoint: statRecord.entryPoint,
         provider: statRecord.provider,
-        server: statRecord.server,
         profile: statRecord.profile,
         ...statRecord.timestamp
       })

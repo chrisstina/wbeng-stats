@@ -16,7 +16,6 @@ export function createKeyService (config: KeyServiceConfig): IKeyService {
         request.entryPoint,
         request.profile,
         (request.provider != null) ? request.provider : '',
-        request.server,
         ...Object.values(timestamp)]
         .filter(keyPart => keyPart !== '')
         .join(config.keyDelimiter)
