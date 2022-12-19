@@ -19,7 +19,6 @@ export class MysqlWriteRepository implements WriteRepository {
         entryPoint: statRecord.entryPoint,
         server: statRecord.server,
         profile: statRecord.profile,
-        hasErrors: statRecord.hasErrors,
         ...statRecord.timestamp
       })
       .onConflict('record_key')
@@ -42,7 +41,6 @@ export class MysqlWriteRepository implements WriteRepository {
         provider: statRecord.provider,
         server: statRecord.server,
         profile: statRecord.profile,
-        hasErrors: statRecord.hasErrors,
         ...statRecord.timestamp
       })
       .onConflict('record_key')

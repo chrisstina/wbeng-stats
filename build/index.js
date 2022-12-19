@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProvider = exports.updateTotal = void 0;
+exports.updateProviderHits = exports.updateHits = void 0;
 const config_1 = __importDefault(require("config"));
 const createKey_1 = require("./service/createKey");
 const createWriteRepository_1 = require("./service/createWriteRepository");
@@ -20,16 +20,16 @@ const updateStats_1 = require("./service/updateStats");
 const statsConfig = config_1.default.get('stats');
 const writeRepository = (0, createWriteRepository_1.createWriteRepository)(statsConfig.get('storage'));
 const keyService = (0, createKey_1.createKeyService)({ keyDelimiter: statsConfig.get('keyDelimiter') });
-function updateTotal(request) {
+function updateHits(request) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield (0, updateStats_1.updateAPIStats)(request, writeRepository, keyService);
     });
 }
-exports.updateTotal = updateTotal;
-function updateProvider(request) {
+exports.updateHits = updateHits;
+function updateProviderHits(request) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield (0, updateStats_1.updateProviderStats)(request, writeRepository, keyService);
     });
 }
-exports.updateProvider = updateProvider;
+exports.updateProviderHits = updateProviderHits;
 //# sourceMappingURL=index.js.map

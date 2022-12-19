@@ -1,1 +1,1 @@
-export interface WbengRequest { server: string, entryPoint: string, hasErrors: boolean, profile?: string, provider?: string, additionalData: {} }
+export interface WbengRequest { server: string, entryPoint: string, profile?: string, provider?: string, additionalData: {} }

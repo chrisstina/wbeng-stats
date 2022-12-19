@@ -9,10 +9,10 @@ const statsConfig: IConfig = config.get('stats')
 const writeRepository = createWriteRepository(statsConfig.get('storage'))
 const keyService = createKeyService({ keyDelimiter: statsConfig.get('keyDelimiter') })
 
-export async function updateTotal (request: WbengRequest): Promise<number> {
+export async function updateHits (request: WbengRequest): Promise<number> {
   return await updateAPIStats(request, writeRepository, keyService)
 }
 
-export async function updateProvider (request: WbengRequest): Promise<number> {
+export async function updateProviderHits (request: WbengRequest): Promise<number> {
   return await updateProviderStats(request, writeRepository, keyService)
 }

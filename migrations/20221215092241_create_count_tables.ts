@@ -13,7 +13,6 @@ export async function up(knex: Knex): Promise<void[]> {
             table.tinyint('day').notNullable().unsigned();
             table.tinyint('hour').notNullable().unsigned();
             table.tinyint('minute').notNullable().unsigned();
-            table.boolean('hasErrors').defaultTo(false);
             table.integer('total').notNullable().unsigned().defaultTo(1);
 
             table.primary(['record_key']);
@@ -33,7 +32,6 @@ export async function up(knex: Knex): Promise<void[]> {
             table.tinyint('day').notNullable().unsigned();
             table.tinyint('hour').notNullable().unsigned();
             table.tinyint('minute').notNullable().unsigned();
-            table.boolean('hasErrors').defaultTo(false);
             table.integer('total').notNullable().unsigned().defaultTo(1);
 
             table.primary(['record_key']);
