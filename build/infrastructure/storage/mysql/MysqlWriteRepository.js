@@ -15,6 +15,7 @@ class MysqlWriteRepository {
     constructor(config) {
         this.hit_count_tablename = 'hit_count';
         this.provider_hit_count_tablename = 'provider_hit_count';
+        this.error_count_tablename = 'error_count';
         this.knexInstance = (0, knex_1.knex)(config);
     }
     incrementStatRecord(statRecord, incrementBy = 1) {
@@ -36,6 +37,22 @@ class MysqlWriteRepository {
     incrementProviderStatRecord(statRecord, incrementBy = 1) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.knexInstance.table(this.provider_hit_count_tablename)
+                .insert(Object.assign({ record_key: statRecord.key, entryPoint: statRecord.entryPoint, provider: statRecord.provider, server: statRecord.server, profile: statRecord.profile }, statRecord.timestamp))
+                .onConflict('record_key')
+                .merge({
+                total: this.knexInstance.raw(`?? + ${incrementBy}`, 'total')
+            })
+                .then((res) => {
+                return res;
+            })
+                .catch(function (error) {
+                console.error(error.stack);
+            });
+        });
+    }
+    incrementErrorRecord(statRecord, incrementBy = 1) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.knexInstance.table(this.error_count_tablename)
                 .insert(Object.assign({ record_key: statRecord.key, entryPoint: statRecord.entryPoint, provider: statRecord.provider, server: statRecord.server, profile: statRecord.profile }, statRecord.timestamp))
                 .onConflict('record_key')
                 .merge({

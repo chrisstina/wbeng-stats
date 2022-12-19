@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProviderStats = exports.updateAPIStats = void 0;
+exports.updateErrorStats = exports.updateProviderStats = exports.updateAPIStats = void 0;
 const requestToStat_1 = require("../domain/stats/mappers/requestToStat");
 function updateAPIStats(request, writeRepository, keyService) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -27,4 +27,12 @@ function updateProviderStats(request, writeRepository, keyService) {
     });
 }
 exports.updateProviderStats = updateProviderStats;
+function updateErrorStats(request, writeRepository, keyService) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // @todo validation
+        const statRecord = (0, requestToStat_1.requestToTimestampedStatRecord)(request, keyService);
+        return yield writeRepository.incrementErrorRecord(statRecord);
+    });
+}
+exports.updateErrorStats = updateErrorStats;
 //# sourceMappingURL=updateStats.js.map

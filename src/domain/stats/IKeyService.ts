@@ -1,6 +1,8 @@
-import { WbengRequest } from '../../dto/WbengRequest'
+import { CreateWbengAPIHitRecord } from '../../dto/CreateWbengAPIHitRecord'
+import { CreateWbengAPIErrorRecord } from '../../dto/CreateWbengAPIErrorRecord'
+
 import { Timestamp } from './Timestamp'
 
 export interface IKeyService {
-  createKey: (request: WbengRequest, timestamp: Timestamp) => string
+  createKey: (request: CreateWbengAPIHitRecord | CreateWbengAPIErrorRecord, timestamp: Timestamp) => string
 }
