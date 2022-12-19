@@ -1,14 +1,18 @@
 import config, { IConfig } from 'config'
-import { StatType, WbengRequest } from './dto/WbengRequest'
-import { updateStats } from './service/updateStats'
+import { WbengRequest } from './dto/WbengRequest'
 import { createKeyService } from './service/createKey'
 import { createWriteRepository } from './service/createWriteRepository'
+import { updateAPIStats, updateProviderStats } from './service/updateStats'
 
 const statsConfig: IConfig = config.get('stats')
 
 const writeRepository = createWriteRepository(statsConfig.get('storage'))
 const keyService = createKeyService({ keyDelimiter: statsConfig.get('keyDelimiter') })
 
-export async function update (request: WbengRequest, type: StatType = 'request'): Promise<number> {
-  return await updateStats(request, type, writeRepository, keyService)
+export async function updateTotal (request: WbengRequest): Promise<number> {
+  return await updateAPIStats(request, writeRepository, keyService)
+}
+
+export async function updateProvider (request: WbengRequest): Promise<number> {
+  return await updateProviderStats(request, writeRepository, keyService)
 }

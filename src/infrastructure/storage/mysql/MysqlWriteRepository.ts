@@ -2,11 +2,10 @@ import { knex, Knex } from 'knex'
 import { StorageConfig } from '../../config/StorageConfig'
 import { StatRecord } from '../../../domain/stats/StatRecord'
 import { WriteRepository } from '../../../domain/stats/storage/WriteRepository'
-import { ErrorStatRecord } from '../../../domain/stats/ErrorStatRecord'
 
 export class MysqlWriteRepository implements WriteRepository {
-  private readonly hit_count_tablename = 'hits_count'
-  private readonly error_count_tablename = 'hits_count'
+  private readonly hit_count_tablename = 'hit_count'
+  private readonly provider_hit_count_tablename = 'provider_hit_count'
   private readonly knexInstance: Knex
 
   constructor (config: StorageConfig) {
@@ -19,13 +18,13 @@ export class MysqlWriteRepository implements WriteRepository {
         record_key: statRecord.key,
         entryPoint: statRecord.entryPoint,
         server: statRecord.server,
-        provider: statRecord.provider,
         profile: statRecord.profile,
+        hasErrors: statRecord.hasErrors,
         ...statRecord.timestamp
       })
       .onConflict('record_key')
       .merge({
-        count: this.knexInstance.raw(`?? + ${incrementBy}`, 'count')
+        total: this.knexInstance.raw(`?? + ${incrementBy}`, 'total')
       })
       .then((res: any) => {
         return res
@@ -35,19 +34,20 @@ export class MysqlWriteRepository implements WriteRepository {
       })
   }
 
-  async incrementErrorStatRecord (errorStatRecord: ErrorStatRecord, incrementBy = 1): Promise<number> {
-    return await this.knexInstance.table(this.hit_count_tablename)
+  async incrementProviderStatRecord (statRecord: StatRecord, incrementBy = 1): Promise<number> {
+    return await this.knexInstance.table(this.provider_hit_count_tablename)
       .insert({
-        record_key: errorStatRecord.key,
-        entryPoint: errorStatRecord.entryPoint,
-        server: errorStatRecord.server,
-        provider: errorStatRecord.provider,
-        profile: errorStatRecord.profile,
-        ...errorStatRecord.timestamp
+        record_key: statRecord.key,
+        entryPoint: statRecord.entryPoint,
+        provider: statRecord.provider,
+        server: statRecord.server,
+        profile: statRecord.profile,
+        hasErrors: statRecord.hasErrors,
+        ...statRecord.timestamp
       })
       .onConflict('record_key')
       .merge({
-        count: this.knexInstance.raw(`?? + ${incrementBy}`, 'count')
+        total: this.knexInstance.raw(`?? + ${incrementBy}`, 'total')
       })
       .then((res: any) => {
         return res

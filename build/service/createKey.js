@@ -6,9 +6,11 @@ function createKeyService(config) {
         createKey(request, timestamp) {
             return [request.entryPoint,
                 request.profile,
-                (request.provider != null) || '',
+                (request.provider != null) ? request.provider : '',
                 request.server,
-                ...Object.values(timestamp)].join(config.keyDelimiter);
+                ...Object.values(timestamp)]
+                .filter(keyPart => keyPart !== '')
+                .join(config.keyDelimiter);
         }
     };
 }

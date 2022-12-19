@@ -1,1 +1,0 @@
-{"version":3,"file":"createWriteRepository.js","sourceRoot":"","sources":["../../../src/domain/stats/createWriteRepository.ts"],"names":[],"mappings":";;;AAAA,kGAA6F;AAG7F,SAAgB,qBAAqB,CAAC,WAAwB,EAAE,aAAa,GAAG,EAAE;IAC9E,IAAI,WAAW,KAAK,OAAO,EAAE;QACzB,OAAO,IAAI,2CAAoB,EAAE,CAAC;KACrC;IACD,MAAM,IAAI,KAAK,CAAC,0BAA0B,CAAC,CAAC;AAChD,CAAC;AALD,sDAKC"}

@@ -3,7 +3,7 @@
     "storage": {
       "client": "mysql",
       "connection": {
-        "database": "test_wbeng_stats",
+        "database": "development_wbeng_stats",
         "user": "root",
         "password": ""
       }

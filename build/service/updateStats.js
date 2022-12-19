@@ -9,21 +9,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateStats = void 0;
+exports.updateProviderStats = exports.updateAPIStats = void 0;
 const requestToStat_1 = require("../domain/stats/mappers/requestToStat");
-function updateStats(request, type, writeRepository, keyService) {
+function updateAPIStats(request, writeRepository, keyService) {
     return __awaiter(this, void 0, void 0, function* () {
         // @todo validation
-        if (type === 'request') {
-            const statRecord = (0, requestToStat_1.requestToTimestampedStatRecord)(request, keyService);
-            return yield writeRepository.incrementStatRecord(statRecord);
-        }
-        if (type === 'error') {
-            const statRecord = (0, requestToStat_1.requestToErrorStatRecord)(request, keyService);
-            return yield writeRepository.incrementErrorStatRecord(statRecord);
-        }
-        throw new Error('Unknown request type. Expected request or error type.');
+        const statRecord = (0, requestToStat_1.requestToTimestampedStatRecord)(request, keyService);
+        return yield writeRepository.incrementStatRecord(statRecord);
     });
 }
-exports.updateStats = updateStats;
+exports.updateAPIStats = updateAPIStats;
+function updateProviderStats(request, writeRepository, keyService) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // @todo validation
+        const statRecord = (0, requestToStat_1.requestToTimestampedStatRecord)(request, keyService);
+        return yield writeRepository.incrementProviderStatRecord(statRecord);
+    });
+}
+exports.updateProviderStats = updateProviderStats;
 //# sourceMappingURL=updateStats.js.map

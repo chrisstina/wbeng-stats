@@ -8,9 +8,11 @@ export function createKeyService (config: KeyServiceConfig): IKeyService {
     createKey (request: WbengRequest, timestamp: Timestamp): string {
       return [request.entryPoint,
         request.profile,
-        (request.provider != null) || '',
+        (request.provider != null) ? request.provider : '',
         request.server,
-        ...Object.values(timestamp)].join(config.keyDelimiter)
+        ...Object.values(timestamp)]
+        .filter(keyPart => keyPart !== '')
+        .join(config.keyDelimiter)
     }
   }
 }
