@@ -4,6 +4,8 @@ import { CreateWbengAPIErrorRecord } from './dto/CreateWbengAPIErrorRecord'
 import { createKeyService } from './service/createKey'
 import { createWriteRepository } from './service/createWriteRepository'
 import { updateAPIStats, updateErrorStats, updateProviderStats } from './service/updateStats'
+import { Timestamp } from './domain/stats/Timestamp'
+import { Granularity } from './domain/stats/IKeyService'
 
 const statsConfig: IConfig = config.get('stats')
 
@@ -20,4 +22,8 @@ export async function updateProviderHits (request: CreateWbengAPIHitRecord): Pro
 
 export async function updateErrors (request: CreateWbengAPIErrorRecord): Promise<number> {
   return await updateErrorStats(request, writeRepository, keyService)
+}
+
+export function createKey (recordOpts: { type: 'request' | 'error', entryPoint: string, profile?: string, provider?: string }, timestamp: Timestamp, granularity: Granularity = 'minute'): string {
+  return keyService.createKey(recordOpts, timestamp, granularity)
 }

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateErrors = exports.updateProviderHits = exports.updateHits = void 0;
+exports.createKey = exports.updateErrors = exports.updateProviderHits = exports.updateHits = void 0;
 const config_1 = __importDefault(require("config"));
 const createKey_1 = require("./service/createKey");
 const createWriteRepository_1 = require("./service/createWriteRepository");
@@ -38,4 +38,8 @@ function updateErrors(request) {
     });
 }
 exports.updateErrors = updateErrors;
+function createKey(recordOpts, timestamp, granularity = 'minute') {
+    return keyService.createKey(recordOpts, timestamp, granularity);
+}
+exports.createKey = createKey;
 //# sourceMappingURL=index.js.map
