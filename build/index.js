@@ -38,7 +38,7 @@ function updateErrors(request) {
     });
 }
 exports.updateErrors = updateErrors;
-function createKey(recordOpts, timestamp, granularity = 'minute') {
+function createKey(recordOpts, timestamp, granularity) {
     return keyService.createKey(recordOpts, timestamp, granularity);
 }
 exports.createKey = createKey;

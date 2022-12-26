@@ -24,6 +24,6 @@ export async function updateErrors (request: CreateWbengAPIErrorRecord): Promise
   return await updateErrorStats(request, writeRepository, keyService)
 }
 
-export function createKey (recordOpts: { type: 'request' | 'error', entryPoint: string, profile?: string, provider?: string }, timestamp: Timestamp, granularity: Granularity = 'minute'): string {
+export function createKey (recordOpts: { type: 'request' | 'error', entryPoint: string, profile?: string, provider?: string }, timestamp: Timestamp, granularity?: Granularity): string {
   return keyService.createKey(recordOpts, timestamp, granularity)
 }

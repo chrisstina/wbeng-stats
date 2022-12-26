@@ -4,7 +4,7 @@ import { Timestamp } from '../domain/stats/Timestamp'
 
 export function createKeyService (config: KeyServiceConfig): IKeyService {
   return {
-    createKey (recordOpts: { type: 'request' | 'error', entryPoint: string, profile?: string, provider?: string }, timestamp: Timestamp, granularity: Granularity = 'minute'): string {
+    createKey (recordOpts: { type: 'request' | 'error', entryPoint: string, profile?: string, provider?: string }, timestamp: Timestamp, granularity?: Granularity): string {
       const timestampPart = createTimestampPart(timestamp, granularity)
       return [
         recordOpts.type,
@@ -19,7 +19,7 @@ export function createKeyService (config: KeyServiceConfig): IKeyService {
   }
 }
 
-function createTimestampPart (timestamp: Timestamp, granulatiry: Granularity = 'minute'): string[] {
+function createTimestampPart (timestamp: Timestamp, granularity?: Granularity): string[] {
   const {
     year,
     month,
@@ -27,18 +27,30 @@ function createTimestampPart (timestamp: Timestamp, granulatiry: Granularity = '
     day,
     hour
   } = timestamp
-  switch (granulatiry) {
-    case 'hour':
-      return [year, month, week, day, hour]
-    case 'day':
-      return [year, month, week, day]
-    case 'week':
-      return [year, month, week]
-    case 'month':
-      return [year, month]
-    case 'year':
-      return [year]
-    default:
-      return Object.values(timestamp)
+
+  if (granularity !== undefined) {
+    switch (granularity) {
+      case 'hour':
+        return [year, month, week, day, hour]
+      case 'day':
+        return [year, month, week, day]
+      case 'week':
+        return [year, month, week]
+      case 'month':
+        return [year, month]
+      case 'year':
+        return [year]
+      default:
+        return Object.values(timestamp)
+    }
   }
+
+  const key: string[] = [];
+  [year, month, week, day, hour].forEach(part => {
+    if (part === undefined || part === '') {
+      return key
+    }
+    key.push(part)
+  })
+  return key
 }

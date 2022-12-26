@@ -5,8 +5,8 @@
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "files": [
-    "build",
-    "migrations"
+    "build"
+
   ],
   "scripts": {
     "build": "tsc",
