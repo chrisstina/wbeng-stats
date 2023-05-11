@@ -1,1 +1,0 @@
-{"version":3,"file":"StatRecord.js","sourceRoot":"","sources":["../../../src/domain/stats/StatRecord.ts"],"names":[],"mappings":";;;AAEA;;GAEG;AACH,MAAa,UAAU;IACrB,YAAoB,GAAW,EAAS,SAAoB,EAAS,UAAkB,EAAS,OAAgB,EAAS,QAAiB;QAAtH,QAAG,GAAH,GAAG,CAAQ;QAAS,cAAS,GAAT,SAAS,CAAW;QAAS,eAAU,GAAV,UAAU,CAAQ;QAAS,YAAO,GAAP,OAAO,CAAS;QAAS,aAAQ,GAAR,QAAQ,CAAS;IAC1I,CAAC;CACF;AAHD,gCAGC"}

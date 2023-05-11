@@ -1,1 +1,6 @@
-export interface CreateWbengAPIHitRecord { entryPoint: string, profile?: string, provider?: string, additionalData: {} }
+export interface CreateWbengAPIHitRecord {
+  entryPoint: string;
+  profile?: string;
+  provider?: string;
+  additionalData: {};
+}

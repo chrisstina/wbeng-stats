@@ -1,1 +1,3 @@
-export interface KeyServiceConfig { keyDelimiter: string }
+export interface KeyServiceConfig {
+  keyDelimiter: string;
+}
