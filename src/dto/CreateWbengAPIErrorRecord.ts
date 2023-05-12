@@ -3,7 +3,6 @@ export interface CreateWbengAPIErrorRecord {
   errors: string[];
   profile?: string;
   provider?: string;
-  additionalData: {};
 }
 
 export function instanceOfAPIErrorRecord(

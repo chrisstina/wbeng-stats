@@ -1,15 +1,19 @@
 import { StatRecord } from "../StatRecord";
 
 export interface WriteRepository {
-  incrementStatRecord: (
+  incrementWbengAPIHitCounter: (
     statRecord: StatRecord,
     incrementBy?: number
   ) => Promise<number>;
-  incrementProviderStatRecord: (
+  incrementWbengProviderHitCounter: (
     statRecord: StatRecord,
     incrementBy?: number
   ) => Promise<number>;
-  incrementErrorRecord: (
+  incrementWbengAPIErrorCounter: (
+    statRecord: StatRecord,
+    incrementBy?: number
+  ) => Promise<number>;
+  incrementExternalApiCallCounter: (
     statRecord: StatRecord,
     incrementBy?: number
   ) => Promise<number>;

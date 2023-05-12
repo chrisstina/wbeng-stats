@@ -1,51 +1,43 @@
 import config, { IConfig } from "config";
 import { CreateWbengAPIHitRecord } from "./dto/CreateWbengAPIHitRecord";
 import { CreateWbengAPIErrorRecord } from "./dto/CreateWbengAPIErrorRecord";
-import { CreateProviderAPIHitRecord } from "./dto/CreateProviderAPIHitRecord";
 import { createKeyService } from "./service/createKey";
 import { createWriteRepository } from "./service/createWriteRepository";
 import {
   updateAPIStats,
   updateErrorStats,
-  updateProviderStats,
+  updateExternalAPIUsageStats,
+  updateProviderStats
 } from "./service/updateStats";
-import { Timestamp } from "./domain/stats/Timestamp";
-import { Granularity } from "./domain/stats/IKeyService";
+import { CreateExternalAPICallRecord } from "./dto/CreateExternalAPICallRecord";
 
 const statsConfig: IConfig = config.get("stats");
 
 const writeRepository = createWriteRepository(statsConfig.get("storage"));
 const keyService = createKeyService({
-  keyDelimiter: statsConfig.get("keyDelimiter"),
+  keyDelimiter: statsConfig.get("keyDelimiter")
 });
 
-export async function updateHits(
+export async function updateHits (
   request: CreateWbengAPIHitRecord
 ): Promise<number> {
   return await updateAPIStats(request, writeRepository, keyService);
 }
 
-export async function updateProviderHits(
-  request: CreateProviderAPIHitRecord
+export async function updateProviderHits (
+  request: CreateWbengAPIHitRecord
 ): Promise<number> {
   return await updateProviderStats(request, writeRepository, keyService);
 }
 
-export async function updateErrors(
+export async function updateErrors (
   request: CreateWbengAPIErrorRecord
 ): Promise<number> {
   return await updateErrorStats(request, writeRepository, keyService);
 }
 
-export function createKey(
-  recordOpts: {
-    type: "request" | "error";
-    entryPoint: string;
-    profile?: string;
-    provider?: string;
-  },
-  timestamp: Timestamp,
-  granularity?: Granularity
-): string {
-  return keyService.createKey(recordOpts, timestamp, granularity);
+export async function updateExternalCalls (
+  request: CreateExternalAPICallRecord
+): Promise<number> {
+  return await updateExternalAPIUsageStats(request, writeRepository, keyService);
 }

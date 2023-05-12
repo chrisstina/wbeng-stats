@@ -7,7 +7,8 @@ export class StatRecord {
   constructor(
     public key: string,
     public timestamp: Timestamp,
-    public entryPoint: string,
+    public entryPoint?: string,
+    public operationName?: string,
     public profile?: string,
     public provider?: string
   ) {}

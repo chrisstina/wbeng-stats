@@ -7,13 +7,14 @@ export class MysqlWriteRepository implements WriteRepository {
   private readonly hit_count_tablename = "hit_count";
   private readonly provider_hit_count_tablename = "provider_hit_count";
   private readonly error_count_tablename = "error_count";
+  private readonly external_api_call_count_tablename = "external_api_call_count";
   private readonly knexInstance: Knex;
 
-  constructor(config: StorageConfig) {
+  constructor (config: StorageConfig) {
     this.knexInstance = knex(config);
   }
 
-  async incrementStatRecord(
+  async incrementWbengAPIHitCounter (
     statRecord: StatRecord,
     incrementBy = 1
   ): Promise<number> {
@@ -23,21 +24,21 @@ export class MysqlWriteRepository implements WriteRepository {
         recordKey: statRecord.key,
         entryPoint: statRecord.entryPoint,
         profile: statRecord.profile,
-        ...statRecord.timestamp,
+        ...statRecord.timestamp
       })
       .onConflict("recordKey")
       .merge({
-        total: this.knexInstance.raw(`?? + ${incrementBy}`, "total"),
+        total: this.knexInstance.raw(`?? + ${incrementBy}`, "total")
       })
       .then((res: any) => {
         return res;
       })
-      .catch(function (error: Error) {
+      .catch(function(error: Error) {
         console.error(error.stack);
       });
   }
 
-  async incrementProviderStatRecord(
+  async incrementWbengProviderHitCounter (
     statRecord: StatRecord,
     incrementBy = 1
   ): Promise<number> {
@@ -48,21 +49,21 @@ export class MysqlWriteRepository implements WriteRepository {
         entryPoint: statRecord.entryPoint,
         provider: statRecord.provider,
         profile: statRecord.profile,
-        ...statRecord.timestamp,
+        ...statRecord.timestamp
       })
       .onConflict("recordKey")
       .merge({
-        total: this.knexInstance.raw(`?? + ${incrementBy}`, "total"),
+        total: this.knexInstance.raw(`?? + ${incrementBy}`, "total")
       })
       .then((res: any) => {
         return res;
       })
-      .catch(function (error: Error) {
+      .catch(function(error: Error) {
         console.error(error.stack);
       });
   }
 
-  async incrementErrorRecord(
+  async incrementWbengAPIErrorCounter (
     statRecord: StatRecord,
     incrementBy = 1
   ): Promise<number> {
@@ -73,16 +74,41 @@ export class MysqlWriteRepository implements WriteRepository {
         entryPoint: statRecord.entryPoint,
         provider: statRecord.provider,
         profile: statRecord.profile,
-        ...statRecord.timestamp,
+        ...statRecord.timestamp
       })
       .onConflict("recordKey")
       .merge({
-        total: this.knexInstance.raw(`?? + ${incrementBy}`, "total"),
+        total: this.knexInstance.raw(`?? + ${incrementBy}`, "total")
       })
       .then((res: any) => {
         return res;
       })
-      .catch(function (error: Error) {
+      .catch(function(error: Error) {
+        console.error(error.stack);
+      });
+  }
+
+  async incrementExternalApiCallCounter (
+    statRecord: StatRecord,
+    incrementBy = 1
+  ): Promise<number> {
+    return await this.knexInstance
+      .table(this.external_api_call_count_tablename)
+      .insert({
+        recordKey: statRecord.key,
+        operationName: statRecord.operationName,
+        provider: statRecord.provider,
+        profile: statRecord.profile,
+        ...statRecord.timestamp
+      })
+      .onConflict("recordKey")
+      .merge({
+        total: this.knexInstance.raw(`?? + ${incrementBy}`, "total")
+      })
+      .then((res: any) => {
+        return res;
+      })
+      .catch(function(error: Error) {
         console.error(error.stack);
       });
   }
