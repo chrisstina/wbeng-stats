@@ -61,8 +61,8 @@ export function createKeyService (config: KeyServiceConfig): IKeyService {
         // @todo normalize operation name
         keyParts.push(
           normalizeOperationName(recordOpts.operationName),
-          recordOpts.provider,
-          recordOpts.profile !== undefined ? recordOpts.profile : "*");
+          recordOpts.profile !== undefined ? recordOpts.profile : "*",
+          recordOpts.provider);
       } else if (instanceOfWbengAPIHitRecord(recordOpts)) {
         let statType: "request" | "error" = "request";
         if (instanceOfAPIErrorRecord(recordOpts)) {

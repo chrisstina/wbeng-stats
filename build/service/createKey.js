@@ -41,7 +41,7 @@ function createKeyService(config) {
             const timestampPart = createTimestampPart(timestamp, granularity);
             if ((0, CreateExternalAPICallRecord_1.instanceOfExternalAPICallRecord)(recordOpts)) {
                 // @todo normalize operation name
-                keyParts.push(normalizeOperationName(recordOpts.operationName), recordOpts.provider, recordOpts.profile !== undefined ? recordOpts.profile : "*");
+                keyParts.push(normalizeOperationName(recordOpts.operationName), recordOpts.profile !== undefined ? recordOpts.profile : "*", recordOpts.provider);
             }
             else if ((0, CreateWbengAPIHitRecord_1.instanceOfWbengAPIHitRecord)(recordOpts)) {
                 let statType = "request";
