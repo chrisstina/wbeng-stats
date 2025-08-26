@@ -11,7 +11,7 @@ import {
 } from "./service/updateStats";
 import { CreateExternalAPICallRecord } from "./dto/CreateExternalAPICallRecord";
 
-const statsConfig: IConfig = config.get("stats");
+const statsConfig = config.get<IConfig>("stats");
 
 const writeRepository = createWriteRepository(statsConfig.get("storage"));
 const keyService = createKeyService({

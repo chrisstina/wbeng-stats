@@ -19,10 +19,12 @@
   "author": "chriss",
   "license": "ISC",
   "dependencies": {
-    "config": "^3.3.8",
     "knex": "2.4.0",
     "luxon": "3.2.1",
     "mysql": "^2.18.1"
+  },
+  "peerDependencies": {
+    "config": "^3.3.0"
   },
   "devDependencies": {
     "@testdeck/mocha": "^0.3.3",
