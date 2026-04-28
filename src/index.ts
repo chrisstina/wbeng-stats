@@ -1,4 +1,3 @@
-import config, { IConfig } from "config";
 import { CreateWbengAPIHitRecord } from "./dto/CreateWbengAPIHitRecord";
 import { CreateWbengAPIErrorRecord } from "./dto/CreateWbengAPIErrorRecord";
 import { createKeyService } from "./service/createKey";
@@ -7,37 +6,36 @@ import {
   updateAPIStats,
   updateErrorStats,
   updateExternalAPIUsageStats,
-  updateProviderStats
+  updateProviderStats,
 } from "./service/updateStats";
 import { CreateExternalAPICallRecord } from "./dto/CreateExternalAPICallRecord";
 
-const statsConfig = config.get<IConfig>("stats");
-
-const writeRepository = createWriteRepository(statsConfig.get("storage"));
-const keyService = createKeyService({
-  keyDelimiter: statsConfig.get("keyDelimiter")
-});
-
-export async function updateHits (
-  request: CreateWbengAPIHitRecord
-): Promise<number> {
-  return await updateAPIStats(request, writeRepository, keyService);
+export interface StatsModuleConfig {
+  storage: Parameters<typeof createWriteRepository>[0]; // или ваш точный тип конфига хранилища
+  keyDelimiter: string;
 }
 
-export async function updateProviderHits (
-  request: CreateWbengAPIHitRecord
-): Promise<number> {
-  return await updateProviderStats(request, writeRepository, keyService);
+// Интерфейс возвращаемого клиента
+export interface StatsClient {
+  updateHits(request: CreateWbengAPIHitRecord): Promise<number>;
+  updateProviderHits(request: CreateWbengAPIHitRecord): Promise<number>;
+  updateErrors(request: CreateWbengAPIErrorRecord): Promise<number>;
+  updateExternalCalls(request: CreateExternalAPICallRecord): Promise<number>;
 }
 
-export async function updateErrors (
-  request: CreateWbengAPIErrorRecord
-): Promise<number> {
-  return await updateErrorStats(request, writeRepository, keyService);
-}
+/**
+ * Фабрика: принимает конфигурацию и возвращает готовый к работе клиент.
+ */
+export function createStatsClient(cfg: StatsModuleConfig): StatsClient {
+  const writeRepository = createWriteRepository(cfg.storage);
+  const keyService = createKeyService({ keyDelimiter: cfg.keyDelimiter });
 
-export async function updateExternalCalls (
-  request: CreateExternalAPICallRecord
-): Promise<number> {
-  return await updateExternalAPIUsageStats(request, writeRepository, keyService);
+  return {
+    updateHits: (req) => updateAPIStats(req, writeRepository, keyService),
+    updateProviderHits: (req) =>
+      updateProviderStats(req, writeRepository, keyService),
+    updateErrors: (req) => updateErrorStats(req, writeRepository, keyService),
+    updateExternalCalls: (req) =>
+      updateExternalAPIUsageStats(req, writeRepository, keyService),
+  };
 }
